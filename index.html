@@ -8,36 +8,22 @@
   <!-- 添加KaTeX CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <style>
-    body { display: flex; margin: 0; height: 100vh; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    #sidebar-container { width: 300px; background: #f8f9fa; overflow-y: auto; height: 100vh; box-shadow: 2px 0 10px rgba(0,0,0,0.1); transition: width 0.3s ease; }
-    #sidebar-container.hidden { width: 0; }
-    #sidebar { padding: 1.5em; }
-    #sidebar ul { padding-left: 1.2em; }
-    #sidebar li { line-height: 1.6; margin: 0.5em 0; }
-    #sidebar h1, #sidebar h2 { margin: 1.2em 0 0.7em 0; color: #2c3e50; }
-    #menu-button { position: fixed; top: 10px; left: 10px; width: 40px; height: 40px; border-radius: 50%; border: none; z-index: 1000; background: #3498db; color: white; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: left 0.3s ease; }
-    #menu-button:hover { background: #2980b9; transform: scale(1.05); }
-    #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; background: white; }
-    @media (max-width: 768px) { 
-      #sidebar-container { position: fixed; left: 0; top: 0; z-index: 900; width: 80vw; } 
-      #sidebar-container:not(.hidden) { box-shadow: 5px 0 15px rgba(0,0,0,0.2); }
-      #sidebar-container.hidden { transform: translateX(-100%); }
-      #menu-button { left: 20px; }
-    }
-    a { text-decoration: none; color: #3498db; transition: color 0.2s; }
-    a:hover { color: #e74c3c; text-decoration: underline; }
+    body { display: flex; margin: 0; height: 100vh; overflow: hidden; }
+    #sidebar-container { width: 300px; background: #eee; overflow-y: auto; height: 100vh; }
+    #sidebar-container.hidden, #sidebar-container.hidden #sidebar { width: 0; padding: 0; display: none; }
+    #sidebar { padding: 1em; }
+    #sidebar li { line-height: 1.6; margin: 0.3em 0; }
+    #sidebar h1, #sidebar h2 { margin: 1em 0 0.5em 0; }
+    #menu-button { position: fixed; width: 20px; height: 80px; border: none; z-index: 1000; background: rgba(0, 0, 255, 0.2); }
+    #menu-button:hover, a:hover { color: red; }
+    #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; }
+    @media (max-width: 768px) { #sidebar-container { position: fixed; left: 0; top: 0; z-index: 1000; width: 100vw; } #sidebar-container:not(.hidden) ~ #content { display: none; } }
+    a { text-decoration: none; color: #06d; }
     /* 添加数学公式样式 */
     .katex { font-size: 1.1em; }
-    .katex-display { margin: 1.2em 0; overflow-x: auto; overflow-y: hidden; }
-    /* 美化内容区域 */
-    .markdown-body { line-height: 1.6; }
-    .markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-    .markdown-body code { background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; }
-    .markdown-body pre { background: #f6f8fa; padding: 1em; border-radius: 5px; overflow: auto; }
-    /* 添加加载动画 */
-    .loading { color: #7f8c8d; font-style: italic; }
-    .fade-in { animation: fadeIn 0.5s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* 脚注样式 */
+    .footnotes { font-size: 0.9em; border-top: 1px solid #eaecef; margin-top: 20px; padding-top: 10px; }
+    .footnote-backref { margin-left: 5px; }
   </style>
 </head>
 <body>
@@ -45,99 +31,58 @@
     <div id="sidebar" class="markdown-body"></div>
   </div>
   <button id="menu-button">☰</button>
-  <div id="content" class="markdown-body">
-    <div class="loading">Loading content...</div>
-  </div>
+  <div id="content" class="markdown-body">Loading...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <!-- 添加KaTeX JS -->
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/markdown-it-texmath/texmath.min.js"></script>
+  <!-- 添加脚注插件 -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@3.0.3/dist/markdown-it-footnote.min.js"></script>
   <script>
-    // 配置markdown-it以支持数学公式
+    // 配置markdown-it以支持数学公式和脚注
     const md = window.markdownit({
-      html: true,
-      linkify: true,
-      typographer: true
+      // 启用HTML标签以支持脚注
+      html: true
     });
     
-    // 使用texmath插件处理数学公式
+    // 使用texmath插件
     md.use(window.texmath, {
       engine: window.katex,
       delimiters: 'dollars',
-      katexOptions: { 
-        macros: { "\\RR": "\\mathbb{R}" },
-        throwOnError: false
-      }
+      katexOptions: { macros: { "\\RR": "\\mathbb{R}" } }
     });
+    
+    // 使用脚注插件
+    md.use(window.markdownitFootnote);
     
     let sidebarHidden = window.innerWidth <= 768;
     const savedState = localStorage.getItem('sidebarHidden');
-    if (savedState !== null) {
-      sidebarHidden = JSON.parse(savedState);
-    }
+    if (savedState !== null) sidebarHidden = JSON.parse(savedState);
     
-    // 转换链接格式
     const convertLinks = text => text
       .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
       .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
     
-    // 更新侧边栏状态
     const updateSidebarState = () => {
-      const sidebarContainer = document.getElementById('sidebar-container');
-      const menuButton = document.getElementById('menu-button');
-      
-      if (sidebarHidden) {
-        sidebarContainer.classList.add('hidden');
-        menuButton.textContent = '☰';
-        menuButton.style.left = '10px';
-      } else {
-        sidebarContainer.classList.remove('hidden');
-        menuButton.textContent = '✕';
-        if (window.innerWidth > 768) {
-          menuButton.style.left = '310px';
-        }
-      }
-      
-      if (window.innerWidth > 768) {
-        localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
-      }
+      document.getElementById('sidebar-container').classList.toggle('hidden', sidebarHidden);
+      document.getElementById('menu-button').textContent = sidebarHidden ? '>>' : '<<';
+      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
     };
 
-    // 加载Markdown内容
     const loadMarkdown = file => {
-      document.getElementById('content').innerHTML = '<div class="loading">Loading ' + file + '...</div>';
-      
       fetch(file)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('File not found: ' + file);
-          }
-          return res.text();
-        })
+        .then(res => res.ok ? res.text() : "# 404 - Not Found")
         .then(text => {
-          const htmlContent = md.render(convertLinks(text));
-          document.getElementById('content').innerHTML = htmlContent;
-          document.getElementById('content').classList.add('fade-in');
+          // 使用markdown-it渲染内容，它会自动处理数学公式和脚注
+          document.getElementById('content').innerHTML = md.render(convertLinks(text));
           document.title = decodeURIComponent(file.replace('.md', '')) + ' 🌐ZYX';
           document.getElementById('content').scrollTop = 0;
           
-          // 移除淡入动画类以便下次使用
-          setTimeout(() => {
-            document.getElementById('content').classList.remove('fade-in');
-          }, 500);
-        })
-        .catch(error => {
-          document.getElementById('content').innerHTML = `
-            <h1>404 - Not Found</h1>
-            <p>The requested file "${file}" was not found.</p>
-            <p>Error: ${error.message}</p>
-            <p><a href="javascript:void(0)" onclick="loadMarkdown('README.md')">Return to homepage</a></p>
-          `;
+          // 移除手动渲染数学公式的代码，避免重复渲染
         });
     };
 
-    // 处理链接点击
     const handleLinkClick = href => {
       const url = href.startsWith('?') ? href : '?' + href.replace('.md', '');
       history.pushState(null, '', url);
@@ -148,67 +93,36 @@
       }
     };
 
-    // 获取当前文件
     const getFile = () => {
       const params = new URLSearchParams(window.location.search);
       const firstParam = Array.from(params.keys())[0];
       return firstParam ? firstParam + '.md' : 'README.md';
     };
 
-    // 初始化页面
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('menu-button').addEventListener('click', () => {
         sidebarHidden = !sidebarHidden;
         updateSidebarState();
       });
-      
       updateSidebarState();
-      
-      // 加载侧边栏
-      fetch('_sidebar.md')
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Sidebar not found');
-          }
-          return res.text();
-        })
-        .then(text => {
-          document.getElementById('sidebar').innerHTML = md.render(convertLinks(text));
-          
-          // 为侧边栏链接添加点击事件
-          document.querySelectorAll('#sidebar a').forEach(link => {
-            link.addEventListener('click', e => {
-              e.preventDefault();
-              handleLinkClick(link.getAttribute('href'));
-            });
-          });
-        })
-        .catch(error => {
-          console.error('Error loading sidebar:', error);
-          document.getElementById('sidebar').innerHTML = `
-            <h2>Navigation</h2>
-            <ul>
-              <li><a href="?README">Home</a></li>
-              <li><a href="?math">Math Examples</a></li>
-            </ul>
-            <p><em>Sidebar could not be loaded. Using default navigation.</em></p>
-          `;
-          
-          // 为默认链接添加点击事件
-          document.querySelectorAll('#sidebar a').forEach(link => {
-            link.addEventListener('click', e => {
-              e.preventDefault();
-              handleLinkClick(link.getAttribute('href'));
-            });
+    });
+
+    fetch('_sidebar.md')
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById('sidebar').innerHTML = md.render(convertLinks(text));
+        document.querySelectorAll('#sidebar a').forEach(link => {
+          link.addEventListener('click', e => {
+            e.preventDefault();
+            handleLinkClick(link.getAttribute('href'));
           });
         });
+        
+        // 移除手动渲染数学公式的代码，避免重复渲染
+      });
 
-      // 加载主内容
-      loadMarkdown(getFile());
-      
-      // 处理浏览器前进/后退
-      window.addEventListener('popstate', () => loadMarkdown(getFile()));
-    });
+    loadMarkdown(getFile());
+    window.addEventListener('popstate', () => loadMarkdown(getFile()));
   </script>
 </body>
 </html>
