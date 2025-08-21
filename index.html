@@ -4,43 +4,110 @@
   <meta charset="UTF-8">
   <title>JSMD WebSite [zyxβ2507]</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
-    body { display: flex; margin: 0; height: 100vh; overflow: hidden; }
-    #sidebar-container { width: 300px; background: #eee; overflow-y: auto; height: 100vh; }
+    body { display: flex; margin: 0; height: 100vh; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    #sidebar-container { width: 300px; background: #f8f9fa; overflow-y: auto; height: 100vh; transition: width 0.3s ease; }
     #sidebar-container.hidden, #sidebar-container.hidden #sidebar { width: 0; padding: 0; display: none; }
     #sidebar { padding: 1em; }
     #sidebar li { line-height: 1.6; margin: 0.3em 0; }
     #sidebar h1, #sidebar h2 { margin: 1em 0 0.5em 0; }
-    #menu-button { position: fixed; width: 20px; height: 80px; border: none; z-index: 1000; background: rgba(0, 0, 255, 0.2); }
-    #menu-button:hover, a:hover { color: red; }
-    #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; }
-    @media (max-width: 768px) { #sidebar-container { position: fixed; left: 0; top: 0; z-index: 1000; width: 100vw; } #sidebar-container:not(.hidden) ~ #content { display: none; } }
-    a { text-decoration: none; color: #06d; }
+    #menu-button { 
+      position: fixed; 
+      top: 50%; 
+      transform: translateY(-50%); 
+      width: 20px; 
+      height: 60px; 
+      border: none; 
+      z-index: 1000; 
+      background: rgba(0, 123, 255, 0.1);
+      cursor: pointer;
+      border-radius: 0 4px 4px 0;
+      transition: background-color 0.2s;
+    }
+    #menu-button:hover { background: rgba(0, 123, 255, 0.3); }
+    a:hover { color: #0056b3; }
+    #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+    @media (max-width: 768px) { 
+      #sidebar-container { 
+        position: fixed; 
+        left: 0; 
+        top: 0; 
+        z-index: 1000; 
+        width: 80vw; 
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      } 
+      #sidebar-container:not(.hidden) ~ #content { 
+        opacity: 0.3; 
+        pointer-events: none;
+      } 
+      #menu-button {
+        z-index: 1001;
+      }
+    }
+    a { text-decoration: none; color: #007bff; transition: color 0.2s; }
+    
+    /* Loading indicator */
+    .loading { 
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 123, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #007bff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* MathJax specific styles */
+    .MathJax { outline: 0; }
+    .MathJax_Display { overflow-x: auto; overflow-y: hidden; }
   </style>
 </head>
 <body>
   <div id="sidebar-container">
     <div id="sidebar" class="markdown-body"></div>
   </div>
-  <button id="menu-button">☰</button>
-  <div id="content" class="markdown-body">Loading...</div>
+  <button id="menu-button" aria-label="Toggle sidebar">☰</button>
+  <div id="content" class="markdown-body">
+    <div style="text-align: center; padding: 2em;">
+      <div class="loading"></div>
+      <p>Loading content...</p>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
+    // 使用更现代的变量声明方式
     const md = window.markdownit();
     let sidebarHidden = window.innerWidth <= 768;
     const savedState = localStorage.getItem('sidebarHidden');
     if (savedState !== null) sidebarHidden = JSON.parse(savedState);
     
+    // 添加简单的缓存机制
+    const contentCache = new Map();
+    
+    // 链接转换函数
     const convertLinks = text => text
       .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
       .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
     
+    // 更新侧边栏状态
     const updateSidebarState = () => {
-      document.getElementById('sidebar-container').classList.toggle('hidden', sidebarHidden);
-      document.getElementById('menu-button').textContent = sidebarHidden ? '>>' : '<<';
-      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+      const sidebarContainer = document.getElementById('sidebar-container');
+      const menuButton = document.getElementById('menu-button');
+      
+      sidebarContainer.classList.toggle('hidden', sidebarHidden);
+      menuButton.textContent = sidebarHidden ? '☰' : '✕';
+      menuButton.setAttribute('aria-label', sidebarHidden ? 'Open sidebar' : 'Close sidebar');
+      
+      if (window.innerWidth > 768) {
+        localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+      }
     };
 
     // 异步加载MathJax
@@ -51,87 +118,186 @@
           return;
         }
         
+        // 添加加载状态提示
+        const mathJaxIndicator = document.createElement('div');
+        mathJaxIndicator.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; padding: 5px 10px; border-radius: 4px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);';
+        mathJaxIndicator.innerHTML = 'Loading math formulas...';
+        document.body.appendChild(mathJaxIndicator);
+        
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
         script.async = true;
         
         // 配置MathJax
         window.MathJax = {
-          tex: {inlineMath: [['$', '$']], displayMath: [['$$', '$$']]},
+          tex: {
+            inlineMath: [['$', '$']],
+            displayMath: [['$$', '$$']],
+            processEscapes: true
+          },
+          chtml: {
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+          },
           startup: {
             pageReady: () => {
               console.log('MathJax loaded');
+              document.body.removeChild(mathJaxIndicator);
               resolve();
               return Promise.resolve();
             }
           }
         };
         
+        script.onerror = () => {
+          console.error('Failed to load MathJax');
+          document.body.removeChild(mathJaxIndicator);
+          resolve(); // 即使加载失败也继续执行
+        };
+        
         document.head.appendChild(script);
       });
     };
 
+    // 加载Markdown内容
     const loadMarkdown = file => {
+      // 显示加载状态
+      document.getElementById('content').innerHTML = `
+        <div style="text-align: center; padding: 2em;">
+          <div class="loading"></div>
+          <p>Loading ${file}...</p>
+        </div>
+      `;
+      
+      // 检查缓存
+      if (contentCache.has(file)) {
+        renderContent(contentCache.get(file), file);
+        return;
+      }
+      
       fetch(file)
-        .then(res => res.ok ? res.text() : "# 404 - Not Found")
+        .then(res => {
+          if (!res.ok) throw new Error(`Failed to load ${file}: ${res.status}`);
+          return res.text();
+        })
         .then(text => {
-          document.getElementById('content').innerHTML = md.render(convertLinks(text));
-          document.title = decodeURIComponent(file.replace('.md', '')) + ' 🌐ZYX';
-          document.getElementById('content').scrollTop = 0;
-          
-          // 渲染数学公式
-          if (window.MathJax) {
-            MathJax.typesetPromise && MathJax.typesetPromise();
-          }
+          contentCache.set(file, text); // 缓存内容
+          renderContent(text, file);
+        })
+        .catch(error => {
+          console.error(error);
+          document.getElementById('content').innerHTML = `
+            <div class="markdown-body">
+              <h1>Error Loading Content</h1>
+              <p>${error.message}</p>
+              <p><a href="javascript:location.reload()">Retry</a></p>
+            </div>
+          `;
         });
     };
+    
+    // 渲染内容
+    const renderContent = (text, file) => {
+      const contentElement = document.getElementById('content');
+      contentElement.innerHTML = md.render(convertLinks(text));
+      document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD Website`;
+      contentElement.scrollTop = 0;
+      
+      // 检查是否需要数学公式渲染
+      const hasMath = /\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text);
+      
+      if (hasMath) {
+        loadMathJax().then(() => {
+          if (window.MathJax) {
+            MathJax.typesetPromise && MathJax.typesetPromise([contentElement]);
+          }
+        });
+      }
+      
+      // 添加内容加载完成的事件
+      window.dispatchEvent(new CustomEvent('contentLoaded', { detail: { file } }));
+    };
 
+    // 处理链接点击
     const handleLinkClick = href => {
       const url = href.startsWith('?') ? href : '?' + href.replace('.md', '');
       history.pushState(null, '', url);
       loadMarkdown(href.startsWith('?') ? href.substring(1) + '.md' : href);
+      
       if (window.innerWidth <= 768 && !sidebarHidden) {
         sidebarHidden = true;
         updateSidebarState();
       }
     };
 
+    // 获取当前文件
     const getFile = () => {
       const params = new URLSearchParams(window.location.search);
       const firstParam = Array.from(params.keys())[0];
       return firstParam ? firstParam + '.md' : 'README.md';
     };
 
+    // DOM加载完成
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('menu-button').addEventListener('click', () => {
+      const menuButton = document.getElementById('menu-button');
+      
+      menuButton.addEventListener('click', () => {
         sidebarHidden = !sidebarHidden;
         updateSidebarState();
       });
+      
       updateSidebarState();
       
-      // 异步加载MathJax
-      loadMathJax();
+      // 预加载MathJax（低优先级）
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => {
+          loadMathJax();
+        });
+      } else {
+        // 回退方案
+        setTimeout(loadMathJax, 3000);
+      }
     });
 
+    // 加载侧边栏
     fetch('_sidebar.md')
-      .then(res => res.text())
+      .then(res => res.ok ? res.text() : '# Sidebar\n\n* [Home](README.md)')
       .then(text => {
-        document.getElementById('sidebar').innerHTML = md.render(convertLinks(text));
-        document.querySelectorAll('#sidebar a').forEach(link => {
+        const sidebarElement = document.getElementById('sidebar');
+        sidebarElement.innerHTML = md.render(convertLinks(text));
+        
+        sidebarElement.querySelectorAll('a').forEach(link => {
           link.addEventListener('click', e => {
             e.preventDefault();
             handleLinkClick(link.getAttribute('href'));
           });
         });
-        
-        // 渲染侧边栏中的公式
-        if (window.MathJax) {
-          MathJax.typesetPromise && MathJax.typesetPromise();
-        }
+      })
+      .catch(error => {
+        console.error('Failed to load sidebar:', error);
+        document.getElementById('sidebar').innerHTML = '<p>Error loading navigation</p>';
       });
 
+    // 初始加载
     loadMarkdown(getFile());
+    
+    // 处理浏览器历史
     window.addEventListener('popstate', () => loadMarkdown(getFile()));
+    
+    // 添加键盘快捷键
+    document.addEventListener('keydown', e => {
+      // Ctrl/Cmd + B 切换侧边栏
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        sidebarHidden = !sidebarHidden;
+        updateSidebarState();
+      }
+      
+      // ESC 键关闭侧边栏（在移动设备上）
+      if (e.key === 'Escape' && window.innerWidth <= 768 && !sidebarHidden) {
+        sidebarHidden = true;
+        updateSidebarState();
+      }
+    });
   </script>
 </body>
 </html>
