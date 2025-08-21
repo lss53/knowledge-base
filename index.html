@@ -5,8 +5,6 @@
   <title>JSMD WebSite [zyxβ2507]</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
-  <!-- 添加 KaTeX CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <style>
     body { display: flex; margin: 0; height: 100vh; overflow: hidden; }
     #sidebar-container { width: 300px; background: #eee; overflow-y: auto; height: 100vh; }
@@ -19,9 +17,26 @@
     #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; }
     @media (max-width: 768px) { #sidebar-container { position: fixed; left: 0; top: 0; z-index: 1000; width: 100vw; } #sidebar-container:not(.hidden) ~ #content { display: none; } }
     a { text-decoration: none; color: #06d; }
-    /* 数学公式样式 */
-    .katex { font-size: 1.1em; }
+    
+    /* 公式样式调整 */
+    .math { text-align: center; }
+    .math.display { overflow-x: auto; }
   </style>
+  
+  <!-- 引入MathJax库 -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
   <div id="sidebar-container">
@@ -31,16 +46,8 @@
   <div id="content" class="markdown-body">Loading...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
-  <!-- 添加 KaTeX JS -->
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <!-- 添加 markdown-it 数学公式插件 -->
-  <script src="https://cdn.jsdelivr.net/npm/@traptitech/markdown-it-katex/dist/index.min.js"></script>
-  
   <script>
-    // 配置 markdown-it 使用 KaTeX
     const md = window.markdownit();
-    md.use(window.markdownItKatex); // 使用 KaTeX 插件
-    
     let sidebarHidden = window.innerWidth <= 768;
     const savedState = localStorage.getItem('sidebarHidden');
     if (savedState !== null) sidebarHidden = JSON.parse(savedState);
@@ -62,6 +69,11 @@
           document.getElementById('content').innerHTML = md.render(convertLinks(text));
           document.title = decodeURIComponent(file.replace('.md', '')) + ' 🌐ZYX';
           document.getElementById('content').scrollTop = 0;
+          
+          // 渲染数学公式
+          if (window.MathJax) {
+            MathJax.typesetPromise && MathJax.typesetPromise();
+          }
         });
     };
 
@@ -99,6 +111,11 @@
             handleLinkClick(link.getAttribute('href'));
           });
         });
+        
+        // 渲染侧边栏中的公式（如果有）
+        if (window.MathJax) {
+          MathJax.typesetPromise && MathJax.typesetPromise();
+        }
       });
 
     loadMarkdown(getFile());
