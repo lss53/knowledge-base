@@ -5,7 +5,7 @@
   <title>JSMD WebSite [zyxβ2507]</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
-  <!-- 添加KaTeX CSS -->
+  <!-- 添加 KaTeX CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <style>
     body { display: flex; margin: 0; height: 100vh; overflow: hidden; }
@@ -19,11 +19,8 @@
     #content { padding: 2em; flex: 1; overflow-y: auto; height: 100vh; }
     @media (max-width: 768px) { #sidebar-container { position: fixed; left: 0; top: 0; z-index: 1000; width: 100vw; } #sidebar-container:not(.hidden) ~ #content { display: none; } }
     a { text-decoration: none; color: #06d; }
-    /* 添加数学公式样式 */
+    /* 数学公式样式 */
     .katex { font-size: 1.1em; }
-    /* 脚注样式 */
-    .footnotes { font-size: 0.9em; border-top: 1px solid #eaecef; margin-top: 20px; padding-top: 10px; }
-    .footnote-backref { margin-left: 5px; }
   </style>
 </head>
 <body>
@@ -34,27 +31,15 @@
   <div id="content" class="markdown-body">Loading...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
-  <!-- 添加KaTeX JS -->
+  <!-- 添加 KaTeX JS -->
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it-texmath/texmath.min.js"></script>
-  <!-- 添加脚注插件 -->
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@3.0.3/dist/markdown-it-footnote.min.js"></script>
+  <!-- 添加 markdown-it 数学公式插件 -->
+  <script src="https://cdn.jsdelivr.net/npm/@traptitech/markdown-it-katex/dist/index.min.js"></script>
+  
   <script>
-    // 配置markdown-it以支持数学公式和脚注
-    const md = window.markdownit({
-      // 启用HTML标签以支持脚注
-      html: true
-    });
-    
-    // 使用texmath插件
-    md.use(window.texmath, {
-      engine: window.katex,
-      delimiters: 'dollars',
-      katexOptions: { macros: { "\\RR": "\\mathbb{R}" } }
-    });
-    
-    // 使用脚注插件
-    md.use(window.markdownitFootnote);
+    // 配置 markdown-it 使用 KaTeX
+    const md = window.markdownit();
+    md.use(window.markdownItKatex); // 使用 KaTeX 插件
     
     let sidebarHidden = window.innerWidth <= 768;
     const savedState = localStorage.getItem('sidebarHidden');
@@ -74,12 +59,9 @@
       fetch(file)
         .then(res => res.ok ? res.text() : "# 404 - Not Found")
         .then(text => {
-          // 使用markdown-it渲染内容，它会自动处理数学公式和脚注
           document.getElementById('content').innerHTML = md.render(convertLinks(text));
           document.title = decodeURIComponent(file.replace('.md', '')) + ' 🌐ZYX';
           document.getElementById('content').scrollTop = 0;
-          
-          // 移除手动渲染数学公式的代码，避免重复渲染
         });
     };
 
@@ -117,8 +99,6 @@
             handleLinkClick(link.getAttribute('href'));
           });
         });
-        
-        // 移除手动渲染数学公式的代码，避免重复渲染
       });
 
     loadMarkdown(getFile());
