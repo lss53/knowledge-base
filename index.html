@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite - Aspect Ratio Adaptive</title>
+  <title>JSMD WebSite - Optimized</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -12,19 +12,18 @@
       height: 100vh; 
       overflow: hidden; 
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f8f9fa;
     }
     #sidebar-container { 
       width: 300px; 
       background: #f8f9fa; 
       overflow-y: auto; 
-      transition: width 0.3s, transform 0.3s;
+      transition: width 0.3s;
       border-right: 1px solid #eaecef;
       z-index: 2;
+      flex-shrink: 0;
     }
     #sidebar-container.hidden { 
       width: 0; 
-      transform: translateX(-100%);
     }
     #sidebar { padding: 1.5em; }
     #menu-button { 
@@ -41,16 +40,16 @@
       cursor: pointer;
       font-size: 12px;
       transition: left 0.3s;
-      box-shadow: 2px 0 4px rgba(0,0,0,0.1);
     }
-    #content { 
-      padding: 2em; 
-      flex: 1; 
-      overflow-y: auto; 
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-      margin: 1em;
-      border-radius: 8px;
+    #content {
+        padding: 2em;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        margin: 1em;
+        border-radius: 8px;
+        min-width: 0;
     }
     a { color: #0366d6; }
     a:hover { text-decoration: underline; }
@@ -70,17 +69,18 @@
     .image-container {
       display: flex;
       justify-content: center;
-      margin: 1.5em 0;
+      margin: 1em 0;
       position: relative;
       min-height: 100px;
     }
     
     .markdown-body img {
+      max-width: 100%;
+      height: auto;
       opacity: 0;
-      transition: opacity 0.5s ease;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      object-fit: contain;
+      transition: opacity 0.5s ease, transform 0.3s ease;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .markdown-body img.lazy-loaded {
@@ -114,45 +114,23 @@
       background: #fff5f5;
     }
     
-    /* 根据宽高比自适应 */
-    .wide-image {
-      /* 宽屏图片（宽高比大于1.5） */
-      width: 100%;
-      max-width: 800px;
-      height: auto;
-    }
-    
-    .square-image {
-      /* 方形图片（宽高比0.8-1.5） */
+    /* 根据分辨率自适应 */
+    .high-res-image {
+      max-width: 100% !important;
       width: auto;
-      max-width: 600px;
-      max-height: 500px;
       height: auto;
     }
     
-    .tall-image {
-      /* 竖屏图片（宽高比小于0.8） */
+    .low-res-image {
+      max-width: 50% !important;
       width: auto;
-      max-width: 400px;
-      max-height: 600px;
       height: auto;
-    }
-    
-    /* 图片说明文字样式 */
-    .image-caption {
-      text-align: center;
-      font-style: italic;
-      color: #666;
-      margin-top: 0.8em;
-      font-size: 0.9em;
-      max-width: 100%;
     }
     
     /* 大屏幕调整 */
     @media (min-width: 1200px) {
-      .wide-image { max-width: 900px; }
-      .square-image { max-width: 700px; }
-      .tall-image { max-width: 500px; }
+      .high-res-image { max-width: 80% !important; }
+      .low-res-image { max-width: 40% !important; }
     }
     
     /* 移动设备适配 */
@@ -170,37 +148,17 @@
       #sidebar-container.hidden { transform: translateX(-100%); }
       #menu-button { z-index: 1000; }
       
-      #content {
-        margin: 0.5em;
-        padding: 1.5em;
-      }
-      
-      .wide-image, .square-image, .tall-image {
+      .high-res-image, .low-res-image {
         max-width: 100% !important;
       }
     }
     
-    /* 标题样式 */
-    h1, h2, h3 {
-      border-bottom: 1px solid #eaecef;
-      padding-bottom: 0.3em;
-      margin-top: 1.5em;
-      margin-bottom: 1em;
-    }
-    
-    /* 代码块样式 */
-    pre {
-      background: #f6f8fa;
-      border-radius: 6px;
-      padding: 1em;
-      overflow: auto;
-      margin: 1em 0;
-    }
-    
-    code {
-      background: rgba(27,31,35,0.05);
-      border-radius: 3px;
-      padding: 0.2em 0.4em;
+    /* 图片说明文字样式 */
+    .image-caption {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      margin-top: 0.5em;
       font-size: 0.9em;
     }
   </style>
@@ -229,10 +187,19 @@
       .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
     
     const updateSidebarState = () => {
-      sidebarContainer.classList.toggle('hidden', sidebarHidden);
-      menuButton.textContent = sidebarHidden ? '☰' : '✕';
-      menuButton.style.left = sidebarHidden ? '0' : `${sidebarContainer.offsetWidth}px`;
-      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+        if (sidebarHidden) {
+            sidebarContainer.classList.add('hidden');
+            menuButton.textContent = '☰';
+            menuButton.style.left = '0';
+        } else {
+            sidebarContainer.classList.remove('hidden');
+            menuButton.textContent = '✕';
+            menuButton.style.left = '300px';
+        }
+
+        if (window.innerWidth > 768) {
+            localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+        }
     };
 
     const loadMathJax = () => {
@@ -278,15 +245,11 @@
               loadImage.src = img.dataset.src;
               
               loadImage.onload = function() {
-                // 根据图片宽高比添加不同类名
-                const aspectRatio = this.naturalWidth / this.naturalHeight;
-                
-                if (aspectRatio > 1.5) {
-                  img.classList.add('wide-image');
-                } else if (aspectRatio < 0.8) {
-                  img.classList.add('tall-image');
+                // 根据图片分辨率添加不同类名
+                if (this.naturalWidth > 800 || this.naturalHeight > 600) {
+                  img.classList.add('high-res-image');
                 } else {
-                  img.classList.add('square-image');
+                  img.classList.add('low-res-image');
                 }
                 
                 img.src = this.src;
@@ -362,14 +325,10 @@
           loadImage.src = img.dataset.src;
           
           loadImage.onload = function() {
-            const aspectRatio = this.naturalWidth / this.naturalHeight;
-            
-            if (aspectRatio > 1.5) {
-              img.classList.add('wide-image');
-            } else if (aspectRatio < 0.8) {
-              img.classList.add('tall-image');
+            if (this.naturalWidth > 800 || this.naturalHeight > 600) {
+              img.classList.add('high-res-image');
             } else {
-              img.classList.add('square-image');
+              img.classList.add('low-res-image');
             }
             
             img.src = this.src;
@@ -478,14 +437,10 @@
     // 窗口大小变化时更新侧边栏状态
     window.addEventListener('resize', () => {
       const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        sidebarHidden = true;
-      } else {
-        // 在大屏幕上恢复之前的状态
-        const savedState = localStorage.getItem('sidebarHidden');
-        if (savedState !== null) sidebarHidden = JSON.parse(savedState);
+      if (isMobile !== (window.innerWidth <= 768)) {
+        sidebarHidden = isMobile;
+        updateSidebarState();
       }
-      updateSidebarState();
     });
 
     // 初始化
