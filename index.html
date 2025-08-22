@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite - Aspect Ratio Adaptive</title>
+  <title>JSMD WebSite - Optimized</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,12 +18,11 @@
       width: 300px; 
       background: #f8f9fa; 
       overflow-y: auto; 
-      transition: width 0.3s, transform 0.3s;
+      transition: transform 0.3s;
       border-right: 1px solid #eaecef;
       z-index: 2;
     }
     #sidebar-container.hidden { 
-      width: 0; 
       transform: translateX(-100%);
     }
     #sidebar { padding: 1.5em; }
@@ -72,7 +71,6 @@
       justify-content: center;
       margin: 1.5em 0;
       position: relative;
-      min-height: 100px;
     }
     
     .markdown-body img {
@@ -81,15 +79,12 @@
       border-radius: 6px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       object-fit: contain;
+      max-width: 100%;
+      height: auto;
     }
     
     .markdown-body img.lazy-loaded {
       opacity: 1;
-    }
-    
-    .markdown-body img.lazy-loading {
-      opacity: 0.3;
-      filter: blur(5px);
     }
     
     .image-loading {
@@ -114,30 +109,6 @@
       background: #fff5f5;
     }
     
-    /* 根据宽高比自适应 */
-    .wide-image {
-      /* 宽屏图片（宽高比大于1.5） */
-      width: 100%;
-      max-width: 800px;
-      height: auto;
-    }
-    
-    .square-image {
-      /* 方形图片（宽高比0.8-1.5） */
-      width: auto;
-      max-width: 600px;
-      max-height: 500px;
-      height: auto;
-    }
-    
-    .tall-image {
-      /* 竖屏图片（宽高比小于0.8） */
-      width: auto;
-      max-width: 400px;
-      max-height: 600px;
-      height: auto;
-    }
-    
     /* 图片说明文字样式 */
     .image-caption {
       text-align: center;
@@ -146,13 +117,6 @@
       margin-top: 0.8em;
       font-size: 0.9em;
       max-width: 100%;
-    }
-    
-    /* 大屏幕调整 */
-    @media (min-width: 1200px) {
-      .wide-image { max-width: 900px; }
-      .square-image { max-width: 700px; }
-      .tall-image { max-width: 500px; }
     }
     
     /* 移动设备适配 */
@@ -165,43 +129,13 @@
         width: 80% !important;
         background: white;
         box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-        z-index: 999;
       } 
       #sidebar-container.hidden { transform: translateX(-100%); }
-      #menu-button { z-index: 1000; }
       
       #content {
         margin: 0.5em;
         padding: 1.5em;
       }
-      
-      .wide-image, .square-image, .tall-image {
-        max-width: 100% !important;
-      }
-    }
-    
-    /* 标题样式 */
-    h1, h2, h3 {
-      border-bottom: 1px solid #eaecef;
-      padding-bottom: 0.3em;
-      margin-top: 1.5em;
-      margin-bottom: 1em;
-    }
-    
-    /* 代码块样式 */
-    pre {
-      background: #f6f8fa;
-      border-radius: 6px;
-      padding: 1em;
-      overflow: auto;
-      margin: 1em 0;
-    }
-    
-    code {
-      background: rgba(27,31,35,0.05);
-      border-radius: 3px;
-      padding: 0.2em 0.4em;
-      font-size: 0.9em;
     }
   </style>
 </head>
@@ -231,8 +165,10 @@
     const updateSidebarState = () => {
       sidebarContainer.classList.toggle('hidden', sidebarHidden);
       menuButton.textContent = sidebarHidden ? '☰' : '✕';
-      menuButton.style.left = sidebarHidden ? '0' : `${sidebarContainer.offsetWidth}px`;
-      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+      menuButton.style.left = sidebarHidden ? '0' : '300px';
+      if (window.innerWidth > 768) {
+        localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
+      }
     };
 
     const loadMathJax = () => {
@@ -240,20 +176,12 @@
       
       return new Promise((resolve, reject) => {
         window.MathJax = { 
-          tex: {inlineMath: [['$', '$']]},
-          startup: {
-            pageReady: () => {
-              resolve();
-              return window.MathJax.startup.defaultPageReady();
-            }
-          }
+          tex: {inlineMath: [['$', '$']]}
         };
         
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-        script.onload = () => {
-          // MathJax 加载完成，但需要等待初始化
-        };
+        script.onload = resolve;
         script.onerror = reject;
         document.head.appendChild(script);
       });
@@ -262,74 +190,71 @@
     // 图片懒加载和自适应功能
     const initLazyLoading = () => {
       const lazyImages = contentEl.querySelectorAll('img[data-src]');
+      if (lazyImages.length === 0) return;
+      
+      const loadImage = (img) => {
+        const container = img.parentElement;
+        const loadingIndicator = container.querySelector('.image-loading');
+        
+        const loadImageObj = new Image();
+        loadImageObj.src = img.dataset.src;
+        
+        loadImageObj.onload = function() {
+          // 根据图片宽高比设置适当的最大尺寸
+          const aspectRatio = this.naturalWidth / this.naturalHeight;
+          if (aspectRatio > 2) {
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = 'none';
+          } else if (aspectRatio < 0.5) {
+            img.style.maxWidth = 'none';
+            img.style.maxHeight = '70vh';
+          } else {
+            img.style.maxWidth = 'min(100%, 800px)';
+            img.style.maxHeight = '70vh';
+          }
+          
+          img.src = this.src;
+          img.removeAttribute('data-src');
+          
+          if (loadingIndicator) {
+            loadingIndicator.remove();
+          }
+          
+          img.classList.add('lazy-loaded');
+          
+          // 如果有图片说明，显示它
+          const altText = img.alt;
+          if (altText && !container.querySelector('.image-caption')) {
+            const caption = document.createElement('div');
+            caption.className = 'image-caption';
+            caption.textContent = altText;
+            container.appendChild(caption);
+          }
+        };
+        
+        loadImageObj.onerror = function() {
+          if (loadingIndicator) {
+            loadingIndicator.remove();
+          }
+          
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'image-error';
+          errorDiv.textContent = 'Failed to load image';
+          container.appendChild(errorDiv);
+          
+          img.remove();
+        };
+      };
       
       if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
+        const imageObserver = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
-              const img = entry.target;
-              const container = img.parentElement;
-              const loadingIndicator = container.querySelector('.image-loading');
-              
-              img.classList.add('lazy-loading');
-              
-              // 加载图片
-              const loadImage = new Image();
-              loadImage.src = img.dataset.src;
-              
-              loadImage.onload = function() {
-                // 根据图片宽高比添加不同类名
-                const aspectRatio = this.naturalWidth / this.naturalHeight;
-                
-                if (aspectRatio > 1.5) {
-                  img.classList.add('wide-image');
-                } else if (aspectRatio < 0.8) {
-                  img.classList.add('tall-image');
-                } else {
-                  img.classList.add('square-image');
-                }
-                
-                img.src = this.src;
-                img.removeAttribute('data-src');
-                
-                // 移除加载指示器
-                if (loadingIndicator) {
-                  loadingIndicator.remove();
-                }
-                
-                img.classList.remove('lazy-loading');
-                img.classList.add('lazy-loaded');
-                
-                // 如果有图片说明，显示它
-                const altText = img.alt;
-                if (altText && !container.querySelector('.image-caption')) {
-                  const caption = document.createElement('div');
-                  caption.className = 'image-caption';
-                  caption.textContent = altText;
-                  container.appendChild(caption);
-                }
-              };
-              
-              loadImage.onerror = function() {
-                // 图片加载失败
-                if (loadingIndicator) {
-                  loadingIndicator.remove();
-                }
-                
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'image-error';
-                errorDiv.textContent = 'Failed to load image';
-                container.appendChild(errorDiv);
-                
-                img.remove();
-              };
-              
-              imageObserver.unobserve(img);
+              loadImage(entry.target);
+              imageObserver.unobserve(entry.target);
             }
           });
-        }, {
-          rootMargin: '0px 0px 100px 0px' // 提前100px加载
-        });
+        }, { rootMargin: '0px 0px 100px 0px' });
 
         lazyImages.forEach(img => {
           // 为每个图片添加加载容器和指示器
@@ -356,48 +281,7 @@
           loadingIndicator.className = 'image-loading';
           container.appendChild(loadingIndicator);
           
-          img.classList.add('lazy-loading');
-          
-          const loadImage = new Image();
-          loadImage.src = img.dataset.src;
-          
-          loadImage.onload = function() {
-            const aspectRatio = this.naturalWidth / this.naturalHeight;
-            
-            if (aspectRatio > 1.5) {
-              img.classList.add('wide-image');
-            } else if (aspectRatio < 0.8) {
-              img.classList.add('tall-image');
-            } else {
-              img.classList.add('square-image');
-            }
-            
-            img.src = this.src;
-            img.removeAttribute('data-src');
-            loadingIndicator.remove();
-            
-            img.classList.remove('lazy-loading');
-            img.classList.add('lazy-loaded');
-            
-            const altText = img.alt;
-            if (altText && !container.querySelector('.image-caption')) {
-              const caption = document.createElement('div');
-              caption.className = 'image-caption';
-              caption.textContent = altText;
-              container.appendChild(caption);
-            }
-          };
-          
-          loadImage.onerror = function() {
-            loadingIndicator.remove();
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'image-error';
-            errorDiv.textContent = 'Failed to load image';
-            container.appendChild(errorDiv);
-            
-            img.remove();
-          };
+          loadImage(img);
         });
       }
     };
@@ -420,7 +304,9 @@
       
       if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
         loadMathJax().then(() => {
-          window.MathJax.typesetPromise && window.MathJax.typesetPromise();
+          if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise();
+          }
         }).catch(console.error);
       }
     };
@@ -457,8 +343,8 @@
 
     const getFile = () => {
       const params = new URLSearchParams(window.location.search);
-      const firstParam = Array.from(params.keys())[0];
-      return firstParam ? firstParam + '.md' : 'README.md';
+      const firstParam = params.keys().next().value;
+      return firstParam ? `${firstParam}.md` : 'README.md';
     };
 
     // 事件监听
@@ -469,7 +355,7 @@
 
     document.addEventListener('click', e => {
       const link = e.target.closest('a');
-      if (link && link.href && link.getAttribute('href').startsWith('?')) {
+      if (link && link.getAttribute('href')?.startsWith('?')) {
         e.preventDefault();
         handleLinkClick(link.getAttribute('href'));
       }
@@ -482,8 +368,8 @@
         sidebarHidden = true;
       } else {
         // 在大屏幕上恢复之前的状态
-        const savedState = localStorage.getItem('sidebarHidden');
-        if (savedState !== null) sidebarHidden = JSON.parse(savedState);
+        const saved = localStorage.getItem('sidebarHidden');
+        if (saved !== null) sidebarHidden = JSON.parse(saved);
       }
       updateSidebarState();
     });
