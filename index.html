@@ -317,7 +317,7 @@
     });
 
     // 示例加载 Markdown 内容（替换为你自己的地址）
-    fetch('_sidebar.md')
+    fetch('https://raw.githubusercontent.com/yourname/yourrepo/main/README.md')
       .then(res => res.text())
       .then(text => {
         renderMarkdown(text);
