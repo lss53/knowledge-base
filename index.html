@@ -3,40 +3,149 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite</title>
+  <title>JSMD WebSite [zyxβ2507]</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { display: flex; height: 100vh; overflow: hidden; }
-    #sidebar-container { width: 300px; background: #f8f9fa; overflow-y: auto; }
-    #sidebar-container.hidden { width: 0; }
-    #sidebar { padding: 1em; }
-    #menu-button { 
-      position: fixed; width: 20px; height: 80px; border: none; 
-      z-index: 1000; background: rgba(0, 0, 255, 0.2); cursor: pointer;
+    body {
+      display: flex;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    #menu-button:hover { background: rgba(0, 0, 255, 0.3); }
-    #content { padding: 2em; flex: 1; overflow-y: auto; }
-    a { text-decoration: none; color: #06d; }
-    a:hover { color: #0056b3; }
-    .loading { 
-      display: inline-block; width: 20px; height: 20px;
-      border: 3px solid rgba(0, 123, 255, 0.3); border-radius: 50%;
-      border-top-color: #007bff; animation: spin 1s ease-in-out infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
     
-    @media (max-width: 768px) { 
-      #sidebar-container { position: fixed; left: 0; top: 0; z-index: 999; width: 100vw; } 
-      #sidebar-container.hidden { display: none; }
-      #sidebar-container:not(.hidden) ~ #content { display: none; } 
+    #sidebar-container {
+      width: 300px;
+      background: #f5f7f9;
+      overflow-y: auto;
+      height: 100vh;
+      transition: width 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    
+    #sidebar-container.hidden {
+      width: 0;
+    }
+    
+    #sidebar {
+      padding: 1.5em;
+    }
+    
+    #sidebar h1, #sidebar h2 {
+      margin: 1em 0 0.5em 0;
+      color: #2c3e50;
+    }
+    
+    #sidebar li {
+      line-height: 1.6;
+      margin: 0.5em 0;
+    }
+    
+    #menu-button {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      left: 10px;
+      width: 30px;
+      height: 60px;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      z-index: 1000;
+      background: rgba(41, 128, 185, 0.8);
+      color: white;
+      cursor: pointer;
+      transition: left 0.3s ease, background 0.2s ease;
+      font-weight: bold;
+    }
+    
+    #menu-button:hover {
+      background: rgba(41, 128, 185, 1);
+      left: 12px;
+    }
+    
+    #content {
+      padding: 2em;
+      flex: 1;
+      overflow-y: auto;
+      height: 100vh;
+      background: white;
+    }
+    
+    a {
+      text-decoration: none;
+      color: #2980b9;
+      transition: color 0.2s ease;
+    }
+    
+    a:hover {
+      color: #e74c3c;
+    }
+    
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 50vh;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(52, 152, 219, 0.2);
+      border-radius: 50%;
+      border-top-color: #3498db;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1em;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error-message {
+      color: #e74c3c;
+      text-align: center;
+      padding: 2em;
+    }
+    
+    @media (max-width: 768px) {
+      #sidebar-container {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 999;
+        width: 80vw;
+        box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+      }
+      
+      #sidebar-container.hidden {
+        transform: translateX(-100%);
+        width: 80vw;
+      }
+      
+      #menu-button {
+        left: 5px;
+        z-index: 1000;
+      }
+      
+      #content {
+        padding: 1.5em;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="sidebar-container"><div id="sidebar" class="markdown-body"></div></div>
+  <div id="sidebar-container">
+    <div id="sidebar" class="markdown-body"></div>
+  </div>
   <button id="menu-button">☰</button>
-  <div id="content" class="markdown-body">Loading...</div>
+  <div id="content" class="markdown-body">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading content...</p>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
@@ -45,107 +154,128 @@
     const savedState = localStorage.getItem('sidebarHidden');
     if (savedState !== null) sidebarHidden = JSON.parse(savedState);
     
-    const contentCache = new Map();
+    // 简洁的链接转换函数
     const convertLinks = text => text
       .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
       .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
     
+    // 更新侧边栏状态
     const updateSidebarState = () => {
       const sidebarContainer = document.getElementById('sidebar-container');
       const menuButton = document.getElementById('menu-button');
+      
       sidebarContainer.classList.toggle('hidden', sidebarHidden);
-      menuButton.textContent = sidebarHidden ? '>>' : '<<';
-      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
-    };
-
-    const loadMathJax = () => new Promise(resolve => {
-      if (window.MathJax) return resolve();
+      menuButton.textContent = sidebarHidden ? '☰' : '✕';
       
-      window.MathJax = { tex: {inlineMath: [['$', '$']], displayMath: [['$$', '$$']]} };
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => resolve();
-      document.head.appendChild(script);
-    });
-
-    const renderContent = (text, file) => {
-      const contentEl = document.getElementById('content');
-      contentEl.innerHTML = md.render(convertLinks(text));
-      document.title = `${decodeURIComponent(file.replace('.md', ''))} 🌐ZYX`;
-      contentEl.scrollTop = 0;
-      
-      if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
-        loadMathJax().then(() => window.MathJax?.typesetPromise?.());
+      // 只在桌面设备上保存状态
+      if (window.innerWidth > 768) {
+        localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
       }
     };
 
+    // 加载和渲染Markdown内容
     const loadMarkdown = file => {
       const contentEl = document.getElementById('content');
       contentEl.innerHTML = `
-        <div style="text-align: center; padding: 2em;">
-          <div class="loading"></div>
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
           <p>Loading ${file}...</p>
         </div>
       `;
       
-      if (contentCache.has(file)) {
-        renderContent(contentCache.get(file), file);
-        return;
-      }
-      
       fetch(file)
-        .then(res => res.ok ? res.text() : "# 404 - Not Found")
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+          return res.text();
+        })
         .then(text => {
-          contentCache.set(file, text);
-          renderContent(text, file);
+          contentEl.innerHTML = md.render(convertLinks(text));
+          document.title = `${decodeURIComponent(file.replace('.md', ''))} 🌐ZYX`;
+          contentEl.scrollTop = 0;
         })
         .catch(error => {
-          contentEl.innerHTML = `<h1>Error Loading Content</h1><p>${error.message}</p>`;
+          contentEl.innerHTML = `
+            <div class="error-message">
+              <h2>Error Loading Content</h2>
+              <p>${error.message}</p>
+              <p>Failed to load: ${file}</p>
+            </div>
+          `;
+          console.error('Error loading markdown:', error);
         });
     };
 
+    // 处理链接点击
     const handleLinkClick = href => {
       const url = href.startsWith('?') ? href : '?' + href.replace('.md', '');
       history.pushState(null, '', url);
       loadMarkdown(href.startsWith('?') ? href.substring(1) + '.md' : href);
       
+      // 在移动设备上点击链接后自动隐藏侧边栏
       if (window.innerWidth <= 768 && !sidebarHidden) {
         sidebarHidden = true;
         updateSidebarState();
       }
     };
 
+    // 从URL获取当前文件
     const getFile = () => {
       const params = new URLSearchParams(window.location.search);
       const firstParam = Array.from(params.keys())[0];
       return firstParam ? firstParam + '.md' : 'README.md';
     };
 
+    // 初始化
     document.addEventListener('DOMContentLoaded', () => {
+      // 菜单按钮事件
       document.getElementById('menu-button').addEventListener('click', () => {
         sidebarHidden = !sidebarHidden;
         updateSidebarState();
       });
+      
+      // 初始化侧边栏状态
       updateSidebarState();
-      setTimeout(loadMathJax, 1000);
+      
+      // 点击内容区域隐藏侧边栏（移动设备）
+      if (window.innerWidth <= 768) {
+        document.getElementById('content').addEventListener('click', () => {
+          if (!sidebarHidden) {
+            sidebarHidden = true;
+            updateSidebarState();
+          }
+        });
+      }
     });
 
+    // 加载侧边栏
     fetch('_sidebar.md')
       .then(res => res.text())
       .then(text => {
         const sidebar = document.getElementById('sidebar');
         sidebar.innerHTML = md.render(convertLinks(text));
+        
+        // 为侧边栏链接添加点击事件
         sidebar.querySelectorAll('a').forEach(link => {
           link.addEventListener('click', e => {
             e.preventDefault();
             handleLinkClick(link.getAttribute('href'));
           });
         });
+      })
+      .catch(error => {
+        console.error('Error loading sidebar:', error);
+        document.getElementById('sidebar').innerHTML = `
+          <div class="error-message">
+            <h3>Sidebar Loading Failed</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
       });
 
+    // 加载初始内容
     loadMarkdown(getFile());
+    
+    // 处理浏览器前进/后退
     window.addEventListener('popstate', () => loadMarkdown(getFile()));
   </script>
 </body>
