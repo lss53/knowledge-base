@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Markdown Viewer</title>
+  <title>JSMD WebSite - Aspect Ratio Adaptive</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
@@ -11,16 +12,21 @@
       height: 100vh; 
       overflow: hidden; 
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fa;
     }
     #sidebar-container { 
-      width: 280px; 
+      width: 300px; 
       background: #f8f9fa; 
       overflow-y: auto; 
-      transition: transform 0.3s;
+      transition: width 0.3s, transform 0.3s;
       border-right: 1px solid #eaecef;
+      z-index: 2;
     }
-    #sidebar-container.hidden { transform: translateX(-100%); }
-    #sidebar { padding: 1.5rem; }
+    #sidebar-container.hidden { 
+      width: 0; 
+      transform: translateX(-100%);
+    }
+    #sidebar { padding: 1.5em; }
     #menu-button { 
       position: fixed; 
       top: 50%;
@@ -35,14 +41,18 @@
       cursor: pointer;
       font-size: 12px;
       transition: left 0.3s;
+      box-shadow: 2px 0 4px rgba(0,0,0,0.1);
     }
     #content { 
-      padding: 2rem; 
+      padding: 2em; 
       flex: 1; 
       overflow-y: auto; 
-      line-height: 1.6;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      margin: 1em;
+      border-radius: 8px;
     }
-    a { color: #0366d6; text-decoration: none; }
+    a { color: #0366d6; }
     a:hover { text-decoration: underline; }
     .loading { 
       display: inline-block; 
@@ -54,28 +64,32 @@
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .error { color: #cb2431; text-align: center; padding: 2rem; }
+    .error { color: #cb2431; text-align: center; padding: 2em; }
     
-    /* 图片样式 */
+    /* 图片懒加载和自适应样式 */
     .image-container {
       display: flex;
       justify-content: center;
-      margin: 1rem 0;
+      margin: 1.5em 0;
       position: relative;
       min-height: 100px;
     }
     
     .markdown-body img {
-      max-width: 100%;
-      height: auto;
       opacity: 0;
       transition: opacity 0.5s ease;
-      border-radius: 4px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      object-fit: contain;
     }
     
-    .markdown-body img.loaded {
+    .markdown-body img.lazy-loaded {
       opacity: 1;
+    }
+    
+    .markdown-body img.lazy-loading {
+      opacity: 0.3;
+      filter: blur(5px);
     }
     
     .image-loading {
@@ -91,7 +105,57 @@
       animation: spin 1s linear infinite;
     }
     
-    /* 响应式设计 */
+    .image-error {
+      text-align: center;
+      color: #cb2431;
+      padding: 1em;
+      border: 1px solid #ffcccc;
+      border-radius: 4px;
+      background: #fff5f5;
+    }
+    
+    /* 根据宽高比自适应 */
+    .wide-image {
+      /* 宽屏图片（宽高比大于1.5） */
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+    }
+    
+    .square-image {
+      /* 方形图片（宽高比0.8-1.5） */
+      width: auto;
+      max-width: 600px;
+      max-height: 500px;
+      height: auto;
+    }
+    
+    .tall-image {
+      /* 竖屏图片（宽高比小于0.8） */
+      width: auto;
+      max-width: 400px;
+      max-height: 600px;
+      height: auto;
+    }
+    
+    /* 图片说明文字样式 */
+    .image-caption {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      margin-top: 0.8em;
+      font-size: 0.9em;
+      max-width: 100%;
+    }
+    
+    /* 大屏幕调整 */
+    @media (min-width: 1200px) {
+      .wide-image { max-width: 900px; }
+      .square-image { max-width: 700px; }
+      .tall-image { max-width: 500px; }
+    }
+    
+    /* 移动设备适配 */
     @media (max-width: 768px) { 
       #sidebar-container { 
         position: fixed; 
@@ -103,17 +167,56 @@
         box-shadow: 2px 0 8px rgba(0,0,0,0.1);
         z-index: 999;
       } 
+      #sidebar-container.hidden { transform: translateX(-100%); }
       #menu-button { z-index: 1000; }
+      
+      #content {
+        margin: 0.5em;
+        padding: 1.5em;
+      }
+      
+      .wide-image, .square-image, .tall-image {
+        max-width: 100% !important;
+      }
+    }
+    
+    /* 标题样式 */
+    h1, h2, h3 {
+      border-bottom: 1px solid #eaecef;
+      padding-bottom: 0.3em;
+      margin-top: 1.5em;
+      margin-bottom: 1em;
+    }
+    
+    /* 代码块样式 */
+    pre {
+      background: #f6f8fa;
+      border-radius: 6px;
+      padding: 1em;
+      overflow: auto;
+      margin: 1em 0;
+    }
+    
+    code {
+      background: rgba(27,31,35,0.05);
+      border-radius: 3px;
+      padding: 0.2em 0.4em;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <div id="sidebar-container"><div id="sidebar"></div></div>
+  <div id="sidebar-container"><div id="sidebar" class="markdown-body"></div></div>
   <button id="menu-button">☰</button>
-  <div id="content">Loading...</div>
+  <div id="content" class="markdown-body">Loading...</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
+    const md = window.markdownit();
     let sidebarHidden = window.innerWidth <= 768;
+    const savedState = localStorage.getItem('sidebarHidden');
+    if (savedState !== null) sidebarHidden = JSON.parse(savedState);
+    
     const contentCache = new Map();
     const sidebarContainer = document.getElementById('sidebar-container');
     const sidebar = document.getElementById('sidebar');
@@ -128,77 +231,234 @@
     const updateSidebarState = () => {
       sidebarContainer.classList.toggle('hidden', sidebarHidden);
       menuButton.textContent = sidebarHidden ? '☰' : '✕';
-      menuButton.style.left = sidebarHidden ? '0' : '280px';
+      menuButton.style.left = sidebarHidden ? '0' : `${sidebarContainer.offsetWidth}px`;
+      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
     };
 
-    // 图片懒加载功能
-    const initLazyLoading = () => {
-      const images = contentEl.querySelectorAll('img[data-src]');
+    const loadMathJax = () => {
+      if (window.MathJax) return Promise.resolve();
       
-      const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.className = 'image-loading';
-            img.parentNode.appendChild(loadingIndicator);
-            
-            img.onload = () => {
-              loadingIndicator.remove();
-              img.classList.add('loaded');
-              // 根据图片宽高比调整显示
-              if (img.naturalWidth / img.naturalHeight > 2) {
-                img.style.maxWidth = '100%';
-              } else if (img.naturalHeight > img.naturalWidth) {
-                img.style.maxWidth = '60%';
-              }
-            };
-            
-            img.src = img.dataset.src;
-            img.removeAttribute('data-src');
-            imageObserver.unobserve(img);
+      return new Promise((resolve, reject) => {
+        window.MathJax = { 
+          tex: {inlineMath: [['$', '$']]},
+          startup: {
+            pageReady: () => {
+              resolve();
+              return window.MathJax.startup.defaultPageReady();
+            }
           }
-        });
-      }, { rootMargin: '0px 0px 100px 0px' });
-
-      images.forEach(img => imageObserver.observe(img));
+        };
+        
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+        script.onload = () => {
+          // MathJax 加载完成，但需要等待初始化
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
     };
 
-    // Markdown渲染
-    const renderMarkdown = (text, target) => {
-      // 简化版Markdown解析
-      let html = text
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-        .replace(/\*(.*)\*/gim, '<em>$1</em>')
-        .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img data-src='$2' alt='$1'>")
-        .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2'>$1</a>")
-        .replace(/\n/gim, '<br>');
+    // 图片懒加载和自适应功能
+    const initLazyLoading = () => {
+      const lazyImages = contentEl.querySelectorAll('img[data-src]');
       
-      target.innerHTML = html;
-      initLazyLoading();
+      if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              const container = img.parentElement;
+              const loadingIndicator = container.querySelector('.image-loading');
+              
+              img.classList.add('lazy-loading');
+              
+              // 加载图片
+              const loadImage = new Image();
+              loadImage.src = img.dataset.src;
+              
+              loadImage.onload = function() {
+                // 根据图片宽高比添加不同类名
+                const aspectRatio = this.naturalWidth / this.naturalHeight;
+                
+                if (aspectRatio > 1.5) {
+                  img.classList.add('wide-image');
+                } else if (aspectRatio < 0.8) {
+                  img.classList.add('tall-image');
+                } else {
+                  img.classList.add('square-image');
+                }
+                
+                img.src = this.src;
+                img.removeAttribute('data-src');
+                
+                // 移除加载指示器
+                if (loadingIndicator) {
+                  loadingIndicator.remove();
+                }
+                
+                img.classList.remove('lazy-loading');
+                img.classList.add('lazy-loaded');
+                
+                // 如果有图片说明，显示它
+                const altText = img.alt;
+                if (altText && !container.querySelector('.image-caption')) {
+                  const caption = document.createElement('div');
+                  caption.className = 'image-caption';
+                  caption.textContent = altText;
+                  container.appendChild(caption);
+                }
+              };
+              
+              loadImage.onerror = function() {
+                // 图片加载失败
+                if (loadingIndicator) {
+                  loadingIndicator.remove();
+                }
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'image-error';
+                errorDiv.textContent = 'Failed to load image';
+                container.appendChild(errorDiv);
+                
+                img.remove();
+              };
+              
+              imageObserver.unobserve(img);
+            }
+          });
+        }, {
+          rootMargin: '0px 0px 100px 0px' // 提前100px加载
+        });
+
+        lazyImages.forEach(img => {
+          // 为每个图片添加加载容器和指示器
+          const container = document.createElement('div');
+          container.className = 'image-container';
+          img.parentNode.insertBefore(container, img);
+          container.appendChild(img);
+          
+          const loadingIndicator = document.createElement('div');
+          loadingIndicator.className = 'image-loading';
+          container.appendChild(loadingIndicator);
+          
+          imageObserver.observe(img);
+        });
+      } else {
+        // 不支持 IntersectionObserver 的回退方案
+        lazyImages.forEach(img => {
+          const container = document.createElement('div');
+          container.className = 'image-container';
+          img.parentNode.insertBefore(container, img);
+          container.appendChild(img);
+          
+          const loadingIndicator = document.createElement('div');
+          loadingIndicator.className = 'image-loading';
+          container.appendChild(loadingIndicator);
+          
+          img.classList.add('lazy-loading');
+          
+          const loadImage = new Image();
+          loadImage.src = img.dataset.src;
+          
+          loadImage.onload = function() {
+            const aspectRatio = this.naturalWidth / this.naturalHeight;
+            
+            if (aspectRatio > 1.5) {
+              img.classList.add('wide-image');
+            } else if (aspectRatio < 0.8) {
+              img.classList.add('tall-image');
+            } else {
+              img.classList.add('square-image');
+            }
+            
+            img.src = this.src;
+            img.removeAttribute('data-src');
+            loadingIndicator.remove();
+            
+            img.classList.remove('lazy-loading');
+            img.classList.add('lazy-loaded');
+            
+            const altText = img.alt;
+            if (altText && !container.querySelector('.image-caption')) {
+              const caption = document.createElement('div');
+              caption.className = 'image-caption';
+              caption.textContent = altText;
+              container.appendChild(caption);
+            }
+          };
+          
+          loadImage.onerror = function() {
+            loadingIndicator.remove();
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'image-error';
+            errorDiv.textContent = 'Failed to load image';
+            container.appendChild(errorDiv);
+            
+            img.remove();
+          };
+        });
+      }
     };
 
-    const loadContent = (file, target, isSidebar = false) => {
-      target.innerHTML = `<div style="text-align:center;padding:2rem;"><div class="loading"></div></div>`;
+    const renderContent = (text, file) => {
+      contentEl.innerHTML = md.render(convertLinks(text));
+      document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
+      contentEl.scrollTop = 0;
+      
+      // 处理图片懒加载
+      const images = contentEl.querySelectorAll('img');
+      images.forEach(img => {
+        if (img.src && !img.getAttribute('data-src')) {
+          img.setAttribute('data-src', img.src);
+          img.removeAttribute('src');
+        }
+      });
+      
+      initLazyLoading();
+      
+      if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
+        loadMathJax().then(() => {
+          window.MathJax.typesetPromise && window.MathJax.typesetPromise();
+        }).catch(console.error);
+      }
+    };
+
+    const loadMarkdown = file => {
+      contentEl.innerHTML = `<div style="text-align:center;padding:2em;"><div class="loading"></div><p>Loading ${file}...</p></div>`;
       
       if (contentCache.has(file)) {
-        renderMarkdown(contentCache.get(file), target);
+        renderContent(contentCache.get(file), file);
         return;
       }
       
       fetch(file)
-        .then(res => res.ok ? res.text() : `# ${isSidebar ? 'Sidebar' : 'Content'} not found`)
+        .then(res => res.ok ? res.text() : `# 404 - Not Found\n\nFile ${file} was not found.`)
         .then(text => {
           contentCache.set(file, text);
-          renderMarkdown(text, target);
-          if (!isSidebar) document.title = `${file.replace('.md', '')} - MD Viewer`;
+          renderContent(text, file);
         })
         .catch(error => {
-          target.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+          contentEl.innerHTML = `<div class="error"><h2>Error Loading Content</h2><p>${error.message}</p></div>`;
         });
+    };
+
+    const handleLinkClick = href => {
+      if (!href.startsWith('?')) return;
+      const file = href.substring(1) + '.md';
+      history.pushState(null, '', `?${href.substring(1)}`);
+      loadMarkdown(file);
+      if (window.innerWidth <= 768 && !sidebarHidden) {
+        sidebarHidden = true;
+        updateSidebarState();
+      }
+    };
+
+    const getFile = () => {
+      const params = new URLSearchParams(window.location.search);
+      const firstParam = Array.from(params.keys())[0];
+      return firstParam ? firstParam + '.md' : 'README.md';
     };
 
     // 事件监听
@@ -211,26 +471,37 @@
       const link = e.target.closest('a');
       if (link && link.href && link.getAttribute('href').startsWith('?')) {
         e.preventDefault();
-        const file = link.getAttribute('href').substring(1) + '.md';
-        history.pushState(null, '', `?${link.getAttribute('href').substring(1)}`);
-        loadContent(file, contentEl);
-        if (window.innerWidth <= 768) {
-          sidebarHidden = true;
-          updateSidebarState();
-        }
+        handleLinkClick(link.getAttribute('href'));
       }
+    });
+
+    // 窗口大小变化时更新侧边栏状态
+    window.addEventListener('resize', () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        sidebarHidden = true;
+      } else {
+        // 在大屏幕上恢复之前的状态
+        const savedState = localStorage.getItem('sidebarHidden');
+        if (savedState !== null) sidebarHidden = JSON.parse(savedState);
+      }
+      updateSidebarState();
     });
 
     // 初始化
     updateSidebarState();
-    loadContent('_sidebar.md', sidebar, true);
-    loadContent('README.md', contentEl);
     
-    window.addEventListener('popstate', () => {
-      const params = new URLSearchParams(window.location.search);
-      const file = params.keys().next().value ? params.keys().next().value + '.md' : 'README.md';
-      loadContent(file, contentEl);
-    });
+    fetch('_sidebar.md')
+      .then(res => res.ok ? res.text() : '# Sidebar\n\nSidebar not found.')
+      .then(text => {
+        sidebar.innerHTML = md.render(convertLinks(text));
+      })
+      .catch(error => {
+        sidebar.innerHTML = `<div class="error">Failed to load sidebar: ${error.message}</div>`;
+      });
+
+    loadMarkdown(getFile());
+    window.addEventListener('popstate', () => loadMarkdown(getFile()));
   </script>
 </body>
 </html>
