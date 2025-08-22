@@ -79,6 +79,29 @@
       text-decoration: underline;
     }
 
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 123, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #007bff;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .error {
+      color: #cb2431;
+      text-align: center;
+      padding: 2em;
+    }
+
+    /* 响应式图片容器 */
     .image-container {
       position: relative;
       width: 100%;
@@ -112,12 +135,6 @@
       border-radius: 50%;
       border-top-color: #007bff;
       animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
     }
 
     .image-error {
@@ -198,30 +215,43 @@
       }
     };
 
+    const loadMathJax = () => {
+      if (window.MathJax) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        window.MathJax = {
+          tex: { inlineMath: [['$', '$']] }
+        };
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+
     const initLazyLoading = () => {
       const lazyImages = contentEl.querySelectorAll('.image-container img[data-src]');
+      if (lazyImages.length === 0) return;
 
       const loadImage = (img) => {
         const container = img.closest('.image-container');
         const loading = container.querySelector('.image-loading');
 
-        const src = img.dataset.src;
-        const alt = img.alt;
-
         const image = new Image();
-        image.src = src;
-        image.alt = alt;
+        image.src = img.dataset.src;
+        image.alt = img.alt;
 
         image.onload = () => {
           img.src = image.src;
+          img.removeAttribute('data-src');
           img.classList.add('lazy-loaded');
           if (loading) loading.remove();
 
           // 添加图片说明
-          if (alt) {
+          if (img.alt) {
             const caption = document.createElement('div');
             caption.className = 'image-caption';
-            caption.textContent = alt;
+            caption.textContent = img.alt;
             container.appendChild(caption);
           }
         };
@@ -256,7 +286,7 @@
       // 渲染 Markdown
       let html = md.render(text);
 
-      // 自动封装图片为 .image-container 并添加 srcset 和 data-src
+      // 自动封装图片为 .image-container，并添加 data-src 和 loading="lazy"
       html = html.replace(/<img([^>]+)src="([^"]+)"([^>]*)>/g, (match, before, src, after) => {
         const altMatch = before.match(/alt="([^"]*)"/) || after.match(/alt="([^"]*)"/);
         const alt = altMatch ? altMatch[1] : '';
