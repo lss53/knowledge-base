@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite</title>
+  <title>JSMD WebSite - Optimized</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,27 +59,72 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .error { color: #cb2431; text-align: center; padding: 2em; }
     
-    /* 图片懒加载样式 */
+    /* 图片懒加载和自适应样式 */
+    .image-container {
+      display: flex;
+      justify-content: center;
+      margin: 1em 0;
+      position: relative;
+      min-height: 100px;
+    }
+    
     .markdown-body img {
       max-width: 100%;
       height: auto;
-      display: block;
-      margin: 1em auto;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-radius: 4px;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.5s ease, transform 0.3s ease;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+    
     .markdown-body img.lazy-loaded {
       opacity: 1;
     }
+    
     .markdown-body img.lazy-loading {
+      opacity: 0.3;
       filter: blur(5px);
+    }
+    
+    .image-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 123, 255, 0.2);
+      border-radius: 50%;
+      border-top-color: #007bff;
+      animation: spin 1s linear infinite;
+    }
+    
+    .image-error {
+      text-align: center;
+      color: #cb2431;
+      padding: 1em;
+      border: 1px solid #ffcccc;
+      border-radius: 4px;
+      background: #fff5f5;
+    }
+    
+    /* 根据分辨率自适应 */
+    .high-res-image {
+      max-width: 100% !important;
+      width: auto;
+      height: auto;
+    }
+    
+    .low-res-image {
+      max-width: 50% !important;
+      width: auto;
+      height: auto;
     }
     
     /* 大屏幕调整 */
     @media (min-width: 1200px) {
-      .markdown-body img { max-width: 80%; }
+      .high-res-image { max-width: 80% !important; }
+      .low-res-image { max-width: 40% !important; }
     }
     
     /* 移动设备适配 */
@@ -96,7 +141,19 @@
       } 
       #sidebar-container.hidden { transform: translateX(-100%); }
       #menu-button { z-index: 1000; }
-      .markdown-body img { margin: 0.5em auto; }
+      
+      .high-res-image, .low-res-image {
+        max-width: 100% !important;
+      }
+    }
+    
+    /* 图片说明文字样式 */
+    .image-caption {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      margin-top: 0.5em;
+      font-size: 0.9em;
     }
   </style>
 </head>
@@ -154,7 +211,7 @@
       });
     };
 
-    // 图片懒加载功能
+    // 图片懒加载和自适应功能
     const initLazyLoading = () => {
       const lazyImages = contentEl.querySelectorAll('img[data-src]');
       
@@ -163,28 +220,127 @@
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               const img = entry.target;
+              const container = img.parentElement;
+              const loadingIndicator = container.querySelector('.image-loading');
+              
               img.classList.add('lazy-loading');
-              img.src = img.dataset.src;
-              img.removeAttribute('data-src');
-              img.onload = () => {
+              
+              // 加载图片
+              const loadImage = new Image();
+              loadImage.src = img.dataset.src;
+              
+              loadImage.onload = function() {
+                // 根据图片分辨率添加不同类名
+                if (this.naturalWidth > 800 || this.naturalHeight > 600) {
+                  img.classList.add('high-res-image');
+                } else {
+                  img.classList.add('low-res-image');
+                }
+                
+                img.src = this.src;
+                img.removeAttribute('data-src');
+                
+                // 移除加载指示器
+                if (loadingIndicator) {
+                  loadingIndicator.remove();
+                }
+                
                 img.classList.remove('lazy-loading');
                 img.classList.add('lazy-loaded');
+                
+                // 如果有图片说明，显示它
+                const altText = img.alt;
+                if (altText && !container.querySelector('.image-caption')) {
+                  const caption = document.createElement('div');
+                  caption.className = 'image-caption';
+                  caption.textContent = altText;
+                  container.appendChild(caption);
+                }
               };
+              
+              loadImage.onerror = function() {
+                // 图片加载失败
+                if (loadingIndicator) {
+                  loadingIndicator.remove();
+                }
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'image-error';
+                errorDiv.textContent = 'Failed to load image';
+                container.appendChild(errorDiv);
+                
+                img.remove();
+              };
+              
               imageObserver.unobserve(img);
             }
           });
+        }, {
+          rootMargin: '0px 0px 100px 0px' // 提前100px加载
         });
 
-        lazyImages.forEach(img => imageObserver.observe(img));
+        lazyImages.forEach(img => {
+          // 为每个图片添加加载容器和指示器
+          const container = document.createElement('div');
+          container.className = 'image-container';
+          img.parentNode.insertBefore(container, img);
+          container.appendChild(img);
+          
+          const loadingIndicator = document.createElement('div');
+          loadingIndicator.className = 'image-loading';
+          container.appendChild(loadingIndicator);
+          
+          imageObserver.observe(img);
+        });
       } else {
         // 不支持 IntersectionObserver 的回退方案
         lazyImages.forEach(img => {
+          const container = document.createElement('div');
+          container.className = 'image-container';
+          img.parentNode.insertBefore(container, img);
+          container.appendChild(img);
+          
+          const loadingIndicator = document.createElement('div');
+          loadingIndicator.className = 'image-loading';
+          container.appendChild(loadingIndicator);
+          
           img.classList.add('lazy-loading');
-          img.src = img.dataset.src;
-          img.removeAttribute('data-src');
-          img.onload = () => {
+          
+          const loadImage = new Image();
+          loadImage.src = img.dataset.src;
+          
+          loadImage.onload = function() {
+            if (this.naturalWidth > 800 || this.naturalHeight > 600) {
+              img.classList.add('high-res-image');
+            } else {
+              img.classList.add('low-res-image');
+            }
+            
+            img.src = this.src;
+            img.removeAttribute('data-src');
+            loadingIndicator.remove();
+            
             img.classList.remove('lazy-loading');
             img.classList.add('lazy-loaded');
+            
+            const altText = img.alt;
+            if (altText && !container.querySelector('.image-caption')) {
+              const caption = document.createElement('div');
+              caption.className = 'image-caption';
+              caption.textContent = altText;
+              container.appendChild(caption);
+            }
+          };
+          
+          loadImage.onerror = function() {
+            loadingIndicator.remove();
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'image-error';
+            errorDiv.textContent = 'Failed to load image';
+            container.appendChild(errorDiv);
+            
+            img.remove();
           };
         });
       }
@@ -198,7 +354,7 @@
       // 处理图片懒加载
       const images = contentEl.querySelectorAll('img');
       images.forEach(img => {
-        if (!img.getAttribute('data-src') && img.src) {
+        if (img.src && !img.getAttribute('data-src')) {
           img.setAttribute('data-src', img.src);
           img.removeAttribute('src');
         }
