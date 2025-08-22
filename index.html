@@ -56,19 +56,114 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .error { color: #cb2431; text-align: center; padding: 2em; }
     
-    /* 响应式图片样式 */
+    /* 优化的响应式图片样式 */
+    .markdown-body .image-container {
+      position: relative;
+      margin: 1.5em auto;
+      max-width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+    
+    .markdown-body .image-container:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+    
     .markdown-body img {
       max-width: 100%;
       height: auto;
       display: block;
-      margin: 1em auto;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    
+    .markdown-body img.loaded {
+      opacity: 1;
+    }
+    
+    .markdown-body .image-caption {
+      text-align: center;
+      font-style: italic;
+      color: #6a737d;
+      padding: 0.8em 1em;
+      font-size: 0.9em;
+      border-top: 1px solid #eaecef;
+      background: #fafbfc;
+    }
+    
+    .markdown-body .image-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f6f8fa;
+    }
+    
+    /* 全屏图片查看 */
+    .image-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .image-modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+    
+    .modal-content img {
+      max-width: 100%;
+      max-height: 90vh;
       border-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      width: 40px;
+      height: 40px;
     }
     
     /* 大屏幕调整 */
     @media (min-width: 1200px) {
-      .markdown-body img { max-width: 60%; }
+      .markdown-body .image-container { max-width: 85%; }
+    }
+    
+    /* 平板设备适配 */
+    @media (max-width: 1024px) {
+      .markdown-body .image-container { max-width: 95%; }
     }
     
     /* 移动设备适配 */
@@ -78,14 +173,31 @@
         left: 0; 
         top: 0; 
         height: 100%;
-        width: 60% !important;
+        width: 80% !important;
         background: white;
         box-shadow: 2px 0 8px rgba(0,0,0,0.1);
         z-index: 999;
       } 
       #sidebar-container.hidden { transform: translateX(-100%); }
       #menu-button { z-index: 1000; }
-      .markdown-body img { margin: 0.5em auto; }
+      .markdown-body .image-container { 
+        margin: 1em auto;
+        border-radius: 6px;
+      }
+      
+      .markdown-body .image-caption {
+        padding: 0.6em 0.8em;
+        font-size: 0.85em;
+      }
+    }
+    
+    /* 小屏幕手机 */
+    @media (max-width: 480px) {
+      #content { padding: 1em; }
+      .markdown-body .image-container {
+        margin: 0.8em auto;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
     }
   </style>
 </head>
@@ -93,6 +205,14 @@
   <div id="sidebar-container"><div id="sidebar" class="markdown-body"></div></div>
   <button id="menu-button">☰</button>
   <div id="content" class="markdown-body">Loading...</div>
+  
+  <!-- 图片模态框 -->
+  <div class="image-modal" id="imageModal">
+    <div class="modal-content">
+      <button class="close-modal">&times;</button>
+      <img id="modalImage" src="" alt="Enlarged view">
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
@@ -106,6 +226,9 @@
     const sidebar = document.getElementById('sidebar');
     const menuButton = document.getElementById('menu-button');
     const contentEl = document.getElementById('content');
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModal = document.querySelector('.close-modal');
     
     // 工具函数
     const convertLinks = text => text
@@ -129,10 +252,72 @@
       document.head.appendChild(script);
     });
 
+    // 增强图片处理功能
+    const enhanceImages = () => {
+      const images = contentEl.querySelectorAll('img');
+      
+      images.forEach(img => {
+        // 创建容器
+        const container = document.createElement('div');
+        container.className = 'image-container';
+        
+        // 创建占位符
+        const placeholder = document.createElement('div');
+        placeholder.className = 'image-placeholder';
+        placeholder.innerHTML = '<div class="loading"></div>';
+        
+        // 包装图片
+        img.parentNode.insertBefore(container, img);
+        container.appendChild(placeholder);
+        container.appendChild(img);
+        
+        // 添加点击查看大图功能
+        container.addEventListener('click', () => {
+          modalImage.src = img.src;
+          modalImage.alt = img.alt;
+          imageModal.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        });
+        
+        // 图片加载完成后处理
+        if (img.complete) {
+          handleImageLoad(img, placeholder);
+        } else {
+          img.addEventListener('load', () => handleImageLoad(img, placeholder));
+          img.addEventListener('error', () => {
+            placeholder.innerHTML = 'Failed to load image';
+          });
+        }
+      });
+    };
+    
+    const handleImageLoad = (img, placeholder) => {
+      img.classList.add('loaded');
+      
+      // 添加图片标题（如果有alt文本）
+      if (img.alt && img.alt.trim() !== '') {
+        const caption = document.createElement('div');
+        caption.className = 'image-caption';
+        caption.textContent = img.alt;
+        img.parentNode.appendChild(caption);
+      }
+      
+      // 移除占位符
+      setTimeout(() => {
+        if (placeholder.parentNode) {
+          placeholder.parentNode.removeChild(placeholder);
+        }
+      }, 300);
+    };
+
     const renderContent = (text, file) => {
       contentEl.innerHTML = md.render(convertLinks(text));
       document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
       contentEl.scrollTop = 0;
+      
+      // 增强图片功能
+      setTimeout(enhanceImages, 0);
+      
       if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
         loadMathJax().then(() => window.MathJax?.typesetPromise?.());
       }
@@ -185,6 +370,19 @@
       if (link && link.href && link.getAttribute('href').startsWith('?')) {
         e.preventDefault();
         handleLinkClick(link.getAttribute('href'));
+      }
+    });
+    
+    // 模态框事件
+    closeModal.addEventListener('click', () => {
+      imageModal.classList.remove('active');
+      document.body.style.overflow = '';
+    });
+    
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.remove('active');
+        document.body.style.overflow = '';
       }
     });
 
