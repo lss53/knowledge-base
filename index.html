@@ -11,387 +11,183 @@
       display: flex; 
       height: 100vh; 
       overflow: hidden; 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    
     #sidebar-container { 
       width: 300px; 
       background: #f8f9fa; 
       overflow-y: auto; 
-      transition: width 0.3s ease;
+      transition: width 0.3s;
       border-right: 1px solid #eaecef;
     }
-    
-    #sidebar-container.hidden { 
-      width: 0; 
-      overflow: hidden;
-    }
-    
-    #sidebar { 
-      padding: 1.5em; 
-      min-height: 100%;
-    }
-    
+    #sidebar-container.hidden { width: 0; }
+    #sidebar { padding: 1.5em; }
     #menu-button { 
       position: fixed; 
       top: 50%;
       transform: translateY(-50%);
-      width: 20px; 
-      height: 80px; 
+      width: 24px; 
+      height: 60px; 
       border: none;
       border-radius: 0 4px 4px 0;
       z-index: 1000; 
-      background: rgba(0, 123, 255, 0.7); 
+      background: #007bff; 
       color: white;
       cursor: pointer;
-      transition: background 0.2s, left 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-size: 12px;
+      transition: left 0.3s;
     }
-    
-    #menu-button:hover { 
-      background: rgba(0, 123, 255, 0.9); 
-    }
-    
     #content { 
       padding: 2em; 
       flex: 1; 
       overflow-y: auto; 
-      transition: opacity 0.3s ease;
     }
-    
-    a { 
-      text-decoration: none; 
-      color: #0366d6; 
-    }
-    
-    a:hover { 
-      text-decoration: underline;
-      color: #0366d6; 
-    }
-    
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 200px;
-      color: #6a737d;
-    }
-    
+    a { color: #0366d6; }
+    a:hover { text-decoration: underline; }
     .loading { 
       display: inline-block; 
-      width: 24px; 
-      height: 24px;
+      width: 20px; 
+      height: 20px;
       border: 3px solid rgba(0, 123, 255, 0.3); 
       border-radius: 50%;
       border-top-color: #007bff; 
-      animation: spin 1s ease-in-out infinite;
-      margin-bottom: 1em;
+      animation: spin 1s linear infinite;
     }
-    
-    @keyframes spin { 
-      to { transform: rotate(360deg); } 
-    }
-    
-    .error-message {
-      color: #cb2431;
-      text-align: center;
-      padding: 2em;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #cb2431; text-align: center; padding: 2em; }
     
     @media (max-width: 768px) { 
       #sidebar-container { 
         position: fixed; 
         left: 0; 
         top: 0; 
-        z-index: 999; 
-        height: 100vh;
+        height: 100%;
         width: 80% !important;
         background: white;
-        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        z-index: 999;
       } 
-      
-      #sidebar-container.hidden { 
-        transform: translateX(-100%);
-        box-shadow: none;
-      } 
-      
-      #overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 998;
-        display: none;
-      }
-      
-      #overlay.visible {
-        display: block;
-      }
-      
-      #menu-button {
-        left: 0;
-        z-index: 1001;
-      }
+      #sidebar-container.hidden { transform: translateX(-100%); }
+      #menu-button { z-index: 1000; }
     }
   </style>
 </head>
 <body>
-  <div id="sidebar-container">
-    <div id="sidebar" class="markdown-body"></div>
-  </div>
-  
-  <div id="overlay"></div>
-  <button id="menu-button" aria-label="Toggle sidebar">☰</button>
-  
-  <div id="content" class="markdown-body">
-    <div class="loading-container">
-      <div class="loading"></div>
-      <p>Loading content...</p>
-    </div>
-  </div>
+  <div id="sidebar-container"><div id="sidebar" class="markdown-body"></div></div>
+  <button id="menu-button">☰</button>
+  <div id="content" class="markdown-body">Loading...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
-    // Initialize markdown parser
-    const md = window.markdownit({
-      html: true,
-      linkify: true,
-      typographer: true
-    });
-    
-    // State management
+    const md = window.markdownit();
     let sidebarHidden = window.innerWidth <= 768;
     const savedState = localStorage.getItem('sidebarHidden');
-    if (savedState !== null) {
-      sidebarHidden = JSON.parse(savedState);
-    }
+    if (savedState !== null) sidebarHidden = JSON.parse(savedState);
     
-    // Caches
     const contentCache = new Map();
     
-    // DOM Elements
+    // DOM元素
     const sidebarContainer = document.getElementById('sidebar-container');
     const sidebar = document.getElementById('sidebar');
     const menuButton = document.getElementById('menu-button');
     const contentEl = document.getElementById('content');
-    const overlay = document.getElementById('overlay');
     
-    // Utility functions
-    const convertLinks = (text) => {
-      // Convert [[Wiki-style links]] to [Wiki-style links](?Wiki-style links)
-      text = text.replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)');
-      
-      // Convert [links](file.md) to [links](?file)
-      return text.replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
-    };
+    // 工具函数
+    const convertLinks = text => text
+      .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
+      .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)');
     
     const updateSidebarState = () => {
       sidebarContainer.classList.toggle('hidden', sidebarHidden);
       menuButton.textContent = sidebarHidden ? '☰' : '✕';
-      
-      // Position menu button
-      if (window.innerWidth > 768) {
-        menuButton.style.left = sidebarHidden ? '0' : '300px';
-        localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
-        overlay.classList.remove('visible');
-      } else {
-        menuButton.style.left = sidebarHidden ? '0' : '80%';
-        if (!sidebarHidden) {
-          overlay.classList.add('visible');
-        } else {
-          overlay.classList.remove('visible');
-        }
-      }
+      menuButton.style.left = sidebarHidden ? '0' : '300px';
+      if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
     };
-    
-    const loadMathJax = () => {
-      return new Promise((resolve) => {
-        if (window.MathJax) {
-          return resolve();
-        }
-        
-        window.MathJax = {
-          tex: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']]
-          },
-          startup: {
-            typeset: false
-          }
-        };
-        
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => {
-          console.error('Failed to load MathJax');
-          resolve();
-        };
-        document.head.appendChild(script);
-      });
-    };
-    
+
+    const loadMathJax = () => new Promise(resolve => {
+      if (window.MathJax) return resolve();
+      window.MathJax = { tex: {inlineMath: [['$', '$']]} };
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.onload = () => resolve();
+      script.onerror = () => resolve();
+      document.head.appendChild(script);
+    });
+
     const renderContent = (text, file) => {
       contentEl.innerHTML = md.render(convertLinks(text));
-      document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD Website`;
+      document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
       contentEl.scrollTop = 0;
-      
-      // Typeset math if needed
       if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
-        loadMathJax().then(() => {
-          if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise();
-          }
-        });
+        loadMathJax().then(() => window.MathJax?.typesetPromise?.());
       }
     };
-    
-    const loadMarkdown = (file) => {
-      // Show loading state
-      contentEl.innerHTML = `
-        <div class="loading-container">
-          <div class="loading"></div>
-          <p>Loading ${file}...</p>
-        </div>
-      `;
+
+    const loadMarkdown = file => {
+      contentEl.innerHTML = `<div style="text-align:center;padding:2em;"><div class="loading"></div><p>Loading ${file}...</p></div>`;
       
-      // Check cache first
       if (contentCache.has(file)) {
         renderContent(contentCache.get(file), file);
         return;
       }
       
-      // Fetch content
       fetch(file)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error(`Failed to load ${file}: ${res.status} ${res.statusText}`);
-          }
-          return res.text();
-        })
+        .then(res => res.ok ? res.text() : `# 404 - Not Found\n\nFile ${file} was not found.`)
         .then(text => {
           contentCache.set(file, text);
           renderContent(text, file);
         })
         .catch(error => {
-          contentEl.innerHTML = `
-            <div class="error-message">
-              <h2>Error Loading Content</h2>
-              <p>${error.message}</p>
-              <p>Please check if the file exists and try again.</p>
-            </div>
-          `;
-          console.error('Error loading markdown:', error);
+          contentEl.innerHTML = `<div class="error"><h2>Error Loading Content</h2><p>${error.message}</p></div>`;
         });
     };
-    
-    const handleLinkClick = (href) => {
-      // Handle internal links
-      if (href.startsWith('?')) {
-        const file = href.substring(1) + '.md';
-        history.pushState({ file }, '', `?${href.substring(1)}`);
-        loadMarkdown(file);
-        
-        // Auto-hide sidebar on mobile
-        if (window.innerWidth <= 768 && !sidebarHidden) {
-          sidebarHidden = true;
-          updateSidebarState();
-        }
-      } 
-      // Handle external links
-      else if (href.startsWith('http')) {
-        window.open(href, '_blank');
-      }
-      // Handle anchor links
-      else if (href.startsWith('#')) {
-        // Let browser handle anchor links
-        return;
-      }
-    };
-    
-    const getCurrentFile = () => {
-      const params = new URLSearchParams(window.location.search);
-      const fileParam = Array.from(params.keys())[0];
-      return fileParam ? fileParam + '.md' : 'README.md';
-    };
-    
-    // Event listeners
-    const setupEventListeners = () => {
-      menuButton.addEventListener('click', () => {
-        sidebarHidden = !sidebarHidden;
-        updateSidebarState();
-      });
-      
-      overlay.addEventListener('click', () => {
+
+    const handleLinkClick = href => {
+      if (!href.startsWith('?')) return;
+      const file = href.substring(1) + '.md';
+      history.pushState(null, '', `?${href.substring(1)}`);
+      loadMarkdown(file);
+      if (window.innerWidth <= 768 && !sidebarHidden) {
         sidebarHidden = true;
         updateSidebarState();
-      });
-      
-      // Handle sidebar link clicks
-      sidebar.addEventListener('click', (e) => {
-        const link = e.target.closest('a');
-        if (link) {
-          e.preventDefault();
-          handleLinkClick(link.getAttribute('href'));
-        }
-      });
-      
-      // Handle content link clicks
-      contentEl.addEventListener('click', (e) => {
-        const link = e.target.closest('a');
-        if (link && link.getAttribute('href').startsWith('?')) {
-          e.preventDefault();
-          handleLinkClick(link.getAttribute('href'));
-        }
-      });
-      
-      // Handle browser navigation
-      window.addEventListener('popstate', (e) => {
-        const file = e.state?.file ? e.state.file + '.md' : getCurrentFile();
-        loadMarkdown(file);
-      });
+      }
     };
-    
-    // Initialize application
-    const initApp = () => {
-      setupEventListeners();
+
+    const getFile = () => {
+      const params = new URLSearchParams(window.location.search);
+      const firstParam = Array.from(params.keys())[0];
+      return firstParam ? firstParam + '.md' : 'README.md';
+    };
+
+    // 事件监听
+    menuButton.addEventListener('click', () => {
+      sidebarHidden = !sidebarHidden;
       updateSidebarState();
-      
-      // Load sidebar
-      fetch('_sidebar.md')
-        .then(res => res.text())
-        .then(text => {
-          sidebar.innerHTML = md.render(convertLinks(text));
-        })
-        .catch(error => {
-          sidebar.innerHTML = `
-            <div class="error-message">
-              <p>Failed to load sidebar: ${error.message}</p>
-            </div>
-          `;
-          console.error('Error loading sidebar:', error);
-        });
-      
-      // Load initial content
-      loadMarkdown(getCurrentFile());
-      
-      // Preload MathJax
-      setTimeout(loadMathJax, 1000);
-    };
+    });
+
+    document.addEventListener('click', e => {
+      const link = e.target.closest('a');
+      if (link && link.href && link.getAttribute('href').startsWith('?')) {
+        e.preventDefault();
+        handleLinkClick(link.getAttribute('href'));
+      }
+    });
+
+    // 初始化
+    updateSidebarState();
     
-    // Start the app when DOM is loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
+    fetch('_sidebar.md')
+      .then(res => res.text())
+      .then(text => {
+        sidebar.innerHTML = md.render(convertLinks(text));
+      })
+      .catch(error => {
+        sidebar.innerHTML = `<div class="error">Failed to load sidebar: ${error.message}</div>`;
+      });
+
+    loadMarkdown(getFile());
+    window.addEventListener('popstate', () => loadMarkdown(getFile()));
+    setTimeout(loadMathJax, 1000);
   </script>
 </body>
 </html>
