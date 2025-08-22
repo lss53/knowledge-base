@@ -7,82 +7,36 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      display: flex; 
-      height: 100vh; 
-      overflow: hidden; 
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    #sidebar-container { 
-      width: 300px; 
-      background: #f8f9fa; 
-      overflow-y: auto;
-      transition: width 0.3s ease;
-    }
+    body { display: flex; height: 100vh; overflow: hidden; }
+    #sidebar-container { width: 300px; background: #f8f9fa; overflow-y: auto; }
     #sidebar-container.hidden { width: 0; }
-    #sidebar { padding: 1.5em; min-width: 300px; }
+    #sidebar { padding: 1em; }
     #menu-button { 
-      position: fixed; 
-      top: 50%;
-      transform: translateY(-50%);
-      left: 300px;
-      width: 20px; 
-      height: 80px; 
-      border: none; 
-      z-index: 1000; 
-      background: rgba(0, 123, 255, 0.2); 
-      cursor: pointer;
-      border-radius: 0 4px 4px 0;
-      transition: left 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #007bff;
+      position: fixed; width: 20px; height: 80px; border: none; 
+      z-index: 1000; background: rgba(0, 0, 255, 0.2); cursor: pointer;
     }
-    #menu-button:hover { background: rgba(0, 123, 255, 0.4); }
-    #sidebar-container.hidden + #menu-button { left: 0; }
-    #content { padding: 2em; flex: 1; overflow-y: auto; background: white; }
-    a { text-decoration: none; color: #007bff; transition: color 0.2s; }
-    a:hover { color: #0056b3; text-decoration: underline; }
+    #menu-button:hover { background: rgba(0, 0, 255, 0.3); }
+    #content { padding: 2em; flex: 1; overflow-y: auto; }
+    a { text-decoration: none; color: #06d; }
+    a:hover { color: #0056b3; }
     .loading { 
-      display: inline-block; 
-      width: 20px; 
-      height: 20px;
-      border: 3px solid rgba(0, 123, 255, 0.3); 
-      border-radius: 50%;
-      border-top-color: #007bff; 
-      animation: spin 1s ease-in-out infinite;
+      display: inline-block; width: 20px; height: 20px;
+      border: 3px solid rgba(0, 123, 255, 0.3); border-radius: 50%;
+      border-top-color: #007bff; animation: spin 1s ease-in-out infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .error-container { text-align: center; padding: 2em; color: #dc3545; }
-    .markdown-body { min-width: 200px; max-width: 980px; margin: 0 auto; }
     
     @media (max-width: 768px) { 
-      #sidebar-container { 
-        position: fixed; 
-        left: 0; 
-        top: 0; 
-        z-index: 999; 
-        width: 100vw; 
-        background: white;
-        height: 100vh;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-      }
-      #sidebar-container:not(.hidden) { transform: translateX(0); }
-      #menu-button {
-        left: 10px; top: 10px; transform: none; height: 40px; width: 40px;
-        border-radius: 50%; background: rgba(0, 123, 255, 0.8); color: white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      }
-      #sidebar-container.hidden + #menu-button { left: 10px; }
+      #sidebar-container { position: fixed; left: 0; top: 0; z-index: 999; width: 100vw; } 
+      #sidebar-container.hidden { display: none; }
+      #sidebar-container:not(.hidden) ~ #content { display: none; } 
     }
   </style>
 </head>
 <body>
   <div id="sidebar-container"><div id="sidebar" class="markdown-body"></div></div>
-  <button id="menu-button" aria-label="Toggle sidebar">☰</button>
-  <div id="content" class="markdown-body"></div>
+  <button id="menu-button">☰</button>
+  <div id="content" class="markdown-body">Loading...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
@@ -100,40 +54,47 @@
       const sidebarContainer = document.getElementById('sidebar-container');
       const menuButton = document.getElementById('menu-button');
       sidebarContainer.classList.toggle('hidden', sidebarHidden);
-      menuButton.textContent = sidebarHidden ? '☰' : '✕';
+      menuButton.textContent = sidebarHidden ? '>>' : '<<';
       if (window.innerWidth > 768) localStorage.setItem('sidebarHidden', JSON.stringify(sidebarHidden));
     };
 
-    const loadMathJax = () => {
-      if (window.MathJax) return Promise.resolve();
-      window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    };
+    const loadMathJax = () => new Promise(resolve => {
+      if (window.MathJax) return resolve();
+      
+      window.MathJax = { tex: {inlineMath: [['$', '$']], displayMath: [['$$', '$$']]} };
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => resolve();
+      document.head.appendChild(script);
+    });
 
     const renderContent = (text, file) => {
       const contentEl = document.getElementById('content');
       contentEl.innerHTML = md.render(convertLinks(text));
       document.title = `${decodeURIComponent(file.replace('.md', ''))} 🌐ZYX`;
       contentEl.scrollTop = 0;
+      
       if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
-        loadMathJax().then(() => window.MathJax?.typesetPromise?.()).catch(() => console.warn('MathJax loading failed'));
+        loadMathJax().then(() => window.MathJax?.typesetPromise?.());
       }
     };
 
     const loadMarkdown = file => {
       const contentEl = document.getElementById('content');
+      contentEl.innerHTML = `
+        <div style="text-align: center; padding: 2em;">
+          <div class="loading"></div>
+          <p>Loading ${file}...</p>
+        </div>
+      `;
+      
       if (contentCache.has(file)) {
         renderContent(contentCache.get(file), file);
         return;
       }
-      contentEl.innerHTML = `<div style="text-align:center;padding:2em"><div class="loading"></div><p>Loading ${file}...</p></div>`;
+      
       fetch(file)
         .then(res => res.ok ? res.text() : "# 404 - Not Found")
         .then(text => {
@@ -141,15 +102,15 @@
           renderContent(text, file);
         })
         .catch(error => {
-          contentEl.innerHTML = `<div class="error-container"><h1>Error Loading Content</h1><p>${error.message}</p><p><a href="javascript:location.reload()">Try again</a></p></div>`;
+          contentEl.innerHTML = `<h1>Error Loading Content</h1><p>${error.message}</p>`;
         });
     };
 
     const handleLinkClick = href => {
-      const targetFile = href.startsWith('?') ? href.substring(1) + '.md' : href;
-      const urlParam = targetFile.replace('.md', '');
-      history.pushState(null, '', `?${urlParam}`);
-      loadMarkdown(targetFile);
+      const url = href.startsWith('?') ? href : '?' + href.replace('.md', '');
+      history.pushState(null, '', url);
+      loadMarkdown(href.startsWith('?') ? href.substring(1) + '.md' : href);
+      
       if (window.innerWidth <= 768 && !sidebarHidden) {
         sidebarHidden = true;
         updateSidebarState();
@@ -168,10 +129,11 @@
         updateSidebarState();
       });
       updateSidebarState();
+      setTimeout(loadMathJax, 1000);
     });
 
     fetch('_sidebar.md')
-      .then(res => res.ok ? res.text() : '# Sidebar\n- [Home](README.md)')
+      .then(res => res.text())
       .then(text => {
         const sidebar = document.getElementById('sidebar');
         sidebar.innerHTML = md.render(convertLinks(text));
@@ -181,9 +143,6 @@
             handleLinkClick(link.getAttribute('href'));
           });
         });
-      })
-      .catch(error => {
-        document.getElementById('sidebar').innerHTML = `<div class="error-container"><h3>Sidebar Load Failed</h3><p>${error.message}</p></div>`;
       });
 
     loadMarkdown(getFile());
