@@ -4,7 +4,7 @@
 
 这是一个基于单HTML文件的极简Markdown网站解决方案。只需一个HTML文件加上Markdown文档，即可快速搭建功能完整的文档网站。
 
-😊 追求极致简洁，150行代码实现侧边栏导航、响应式设计、Wiki风格链接和数学公式渲染等核心功能。JSMD含义：Just Markdown（只需MD文件） + JavaScript（实时转换渲染）。
+😊 追求极致简洁，约120行代码实现侧边栏导航、响应式设计、Wiki风格链接和数学公式渲染等核心功能。JSMD含义：Just Markdown（只需MD文件） + JavaScript（实时转换渲染）。
 
 ## ✨ 主要功能
 
@@ -92,21 +92,6 @@ $$
 - **自动隐藏**: 点击链接后自动隐藏侧边栏
 - **状态保存**: 桌面端侧边栏状态自动保存
 
-## 🎨 自定义样式
-
-项目使用GitHub风格的Markdown CSS，支持以下自定义：
-
-```css
-/* 修改主题色 */
-a { color: #你的颜色; }
-
-/* 调整侧边栏宽度 */
-#sidebar-container { width: 250px; }
-
-/* 自定义加载动画 */
-.loading { border-top-color: #你的颜色; }
-```
-
 ## ⚠️ 注意事项
 
 ### 文件要求
@@ -136,7 +121,7 @@ return firstParam ? firstParam + '.md' : 'README.md'; // 改为你的默认页�
 ### 自定义标题格式
 ```javascript
 // 修改页面标题格式
-document.title = decodeURIComponent(file.replace('.md', '')) + ' 🌐ZYX';
+document.title = decodeURIComponent(file.replace('.md', '')) + ' - JSMD';
 ```
 
 ### 调整缓存策略
@@ -189,4 +174,19 @@ const contentCache = new Map(); // 当前使用Map实现简单缓存
 
 ## 🙏 致谢
 
-[张玉新（善用佳软）](https://github.com/xbeta-zhang/xbeta-small-tools/tree/main/jsmd-website) 。
+感谢[张玉新（善用佳软）](https://github.com/xbeta-zhang/xbeta-small-tools/tree/main/jsmd-website)的灵感和贡献。
+
+## 🔄 更新日志
+
+### v1.1 (精简版)
+- 代码量从约150行精简到约120行
+- 优化了移动端侧边栏交互体验
+- 改进了错误处理和加载状态显示
+- 简化了事件处理逻辑
+- 保留了所有核心功能
+
+### v1.0 (初始版本)
+- 初始版本发布
+- 实现基本Markdown渲染和侧边栏导航
+- 支持Wiki风格链接和数学公式
+- 响应式设计和本地缓存功能
