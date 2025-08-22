@@ -101,26 +101,24 @@
       padding: 2em;
     }
 
-    /* 响应式图片容器 */
     .image-container {
+      display: flex;
+      justify-content: center;
+      margin: 1.5em 0;
       position: relative;
-      width: 100%;
-      max-width: 800px;
-      margin: 1.5em auto;
-      aspect-ratio: 16 / 9;
     }
 
-    .image-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
+    .markdown-body img {
       opacity: 0;
       transition: opacity 0.5s ease;
       border-radius: 6px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      object-fit: contain;
+      max-width: 100%;
+      height: auto;
     }
 
-    .image-container img.lazy-loaded {
+    .markdown-body img.lazy-loaded {
       opacity: 1;
     }
 
@@ -230,34 +228,51 @@
     };
 
     const initLazyLoading = () => {
-      const lazyImages = contentEl.querySelectorAll('.image-container img[data-src]');
+      const lazyImages = contentEl.querySelectorAll('img[data-src]');
       if (lazyImages.length === 0) return;
 
       const loadImage = (img) => {
-        const container = img.closest('.image-container');
-        const loading = container.querySelector('.image-loading');
+        const container = document.createElement('div');
+        container.className = 'image-container';
 
-        const image = new Image();
-        image.src = img.dataset.src;
-        image.alt = img.alt;
+        const loading = document.createElement('div');
+        loading.className = 'image-loading';
+        container.appendChild(loading);
 
-        image.onload = () => {
-          img.src = image.src;
+        const wrapper = img.parentNode;
+        wrapper.replaceChild(container, img);
+        container.appendChild(img);
+
+        const imgObj = new Image();
+        imgObj.src = img.dataset.src;
+        imgObj.onload = () => {
+          const aspectRatio = imgObj.naturalWidth / imgObj.naturalHeight;
+          if (aspectRatio > 2) {
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = 'none';
+          } else if (aspectRatio < 0.5) {
+            img.style.maxWidth = 'none';
+            img.style.maxHeight = '70vh';
+          } else {
+            img.style.maxWidth = 'min(100%, 800px)';
+            img.style.maxHeight = '70vh';
+          }
+          img.src = imgObj.src;
           img.removeAttribute('data-src');
+          loading.remove();
           img.classList.add('lazy-loaded');
-          if (loading) loading.remove();
 
-          // 添加图片说明
-          if (img.alt) {
+          const altText = img.alt;
+          if (altText) {
             const caption = document.createElement('div');
             caption.className = 'image-caption';
-            caption.textContent = img.alt;
+            caption.textContent = altText;
             container.appendChild(caption);
           }
         };
 
-        image.onerror = () => {
-          if (loading) loading.remove();
+        imgObj.onerror = () => {
+          loading.remove();
           const errorDiv = document.createElement('div');
           errorDiv.className = 'image-error';
           errorDiv.textContent = 'Failed to load image';
@@ -278,33 +293,9 @@
 
         lazyImages.forEach(img => observer.observe(img));
       } else {
+        // Fallback: load all images immediately
         lazyImages.forEach(loadImage);
       }
-    };
-
-    const renderMarkdown = (text) => {
-      // 渲染 Markdown
-      let html = md.render(text);
-
-      // 自动封装图片为 .image-container，并添加 data-src 和 loading="lazy"
-      html = html.replace(/<img([^>]+)src="([^"]+)"([^>]*)>/g, (match, before, src, after) => {
-        const altMatch = before.match(/alt="([^"]*)"/) || after.match(/alt="([^"]*)"/);
-        const alt = altMatch ? altMatch[1] : '';
-        return `
-          <div class="image-container">
-            <img
-              data-src="${src}"
-              src=""
-              alt="${alt}"
-              loading="lazy"
-              class="lazy-img"
-            />
-            <div class="image-loading"></div>
-          </div>`;
-      });
-
-      contentEl.innerHTML = html;
-      initLazyLoading();
     };
 
     // 初始化
@@ -316,11 +307,11 @@
       updateSidebarState();
     });
 
-    // 示例加载 Markdown 内容（替换为你自己的地址）
-    fetch('https://raw.githubusercontent.com/yourname/yourrepo/main/README.md')
+    fetch('_sidebar.md')
       .then(res => res.text())
       .then(text => {
-        renderMarkdown(text);
+        contentEl.innerHTML = md.render(text);
+        initLazyLoading();
       })
       .catch(() => {
         contentEl.innerHTML = '<div class="error">Failed to load content</div>';
