@@ -1,0 +1,47 @@
+# MIT License
+
+Copyright (c) 2025 JSMD WebSite Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 许可证说明
+
+此许可证允许您自由地：
+
+- 使用、复制和分发软件
+- 修改和创建软件的衍生作品
+- 将软件用于商业目的
+
+您需要遵守的条件：
+
+- 在软件的所有副本或重要部分中包含上述版权声明和本许可声明
+
+此许可证不提供任何担保，作者不对使用此软件造成的任何损害负责。
+
+## 第三方库
+
+本项目使用了以下第三方库，它们各自有自己的许可证：
+
+- [markdown-it](https://github.com/markdown-it/markdown-it) - MIT License
+- [github-markdown-css](https://github.com/sindresorhus/github-markdown-css) - MIT License
+- [MathJax](https://www.mathjax.org/) - Apache License 2.0
+
+这些库的许可证与本MIT许可证兼容。
