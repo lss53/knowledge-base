@@ -66,7 +66,9 @@ http-server
 
 *   [自定义](?customization)
 *   [部署指南](?deployment)
-```> **注意**: 链接的目标是不带 `.md` 后缀的文件名，并以 `?` 开头。例如，`?getting-started` 会加载 `getting-started.md` 文件。
+```
+
+> **注意**: 链接的目标是不带 `.md` 后缀的文件名，并以 `?` 开头。例如，`?getting-started` 会加载 `getting-started.md` 文件。
 
 ### 3. 创建页面
 
