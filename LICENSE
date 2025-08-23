@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2025 JSMD WebSite Contributors
+Copyright © 2023 张玉新 (xbeta-zhang) and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,25 @@ SOFTWARE.
 
 ---
 
-## 许可证说明
+## 附加说明
 
-此许可证允许您自由地：
+### 第三方库使用
+本项目使用了以下第三方库，它们遵循各自的许可证：
 
-- 使用、复制和分发软件
-- 修改和创建软件的衍生作品
-- 将软件用于商业目的
+1. **markdown-it** - MIT License
+   - 用于Markdown解析和渲染
+   - 源代码: https://github.com/markdown-it/markdown-it
 
-您需要遵守的条件：
+2. **github-markdown-css** - MIT License
+   - 提供GitHub风格的Markdown样式
+   - 源代码: https://github.com/sindresorhus/github-markdown-css
 
-- 在软件的所有副本或重要部分中包含上述版权声明和本许可声明
+3. **MathJax** - Apache License 2.0
+   - 用于数学公式渲染
+   - 源代码: https://github.com/mathjax/MathJax
 
-此许可证不提供任何担保，作者不对使用此软件造成的任何损害负责。
+### 归属要求
+使用本项目时，请保留原始版权声明和许可证文件。如果您修改了代码，请在显著位置说明基于JSMD WebSite构建。
 
-## 第三方库
-
-本项目使用了以下第三方库，它们各自有自己的许可证：
-
-- [markdown-it](https://github.com/markdown-it/markdown-it) - MIT License
-- [github-markdown-css](https://github.com/sindresorhus/github-markdown-css) - MIT License
-- [MathJax](https://www.mathjax.org/) - Apache License 2.0
-
-这些库的许可证与本MIT许可证兼容。
+### 贡献者协议
+通过向本项目提交代码，您同意您的贡献将遵循MIT许可证条款。
