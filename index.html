@@ -523,7 +523,6 @@
         `);
         
         if (state.contentCache.has(file)) {
-          // 修复: 直接调用render函数而不是使用this
           contentRenderer.render(state.contentCache.get(file), file);
           return;
         }
@@ -532,7 +531,6 @@
           .then(res => res.ok ? res.text() : `# 404 - Not Found\n\nFile ${file} was not found.`)
           .then(text => {
             state.contentCache.set(file, text);
-            // 修复: 直接调用render函数而不是使用this
             contentRenderer.render(text, file);
           })
           .catch(error => {
