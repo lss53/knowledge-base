@@ -118,6 +118,7 @@
       padding: 2rem; 
     }
     
+    /* 图片懒加载和自适应样式 */
     .image-container {
       display: flex;
       flex-direction: column;
@@ -162,6 +163,7 @@
       background: var(--error-bg);
     }
     
+    /* 图片说明文字样式 */
     .image-caption {
       text-align: center;
       font-style: italic;
@@ -171,6 +173,7 @@
       max-width: 100%;
     }
     
+    /* 内容加载状态 */
     .content-loading {
       display: flex;
       flex-direction: column;
@@ -180,12 +183,14 @@
       gap: 1rem;
     }
     
+    /* 修复侧边栏隐藏后内容区域自适应问题 */
     @media (min-width: 769px) {
       #sidebar-container.hidden + #content {
         margin-left: var(--content-margin);
       }
     }
     
+    /* 移动设备适配 */
     @media (max-width: 768px) { 
       #sidebar-container { 
         position: fixed; 
@@ -212,6 +217,7 @@
       }
     }
     
+    /* 高对比度模式支持 */
     @media (prefers-contrast: high) {
       :root {
         --primary-color: #004d99;
@@ -223,6 +229,7 @@
       }
     }
     
+    /* 减少动画模式 */
     @media (prefers-reduced-motion: reduce) {
       * {
         animation-duration: 0.01ms !important;
