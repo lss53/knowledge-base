@@ -6,6 +6,19 @@
   <title>JSMD WebSite - Optimized</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   <style>
+    :root {
+      --primary-color: #0366d6;
+      --primary-hover: #0256b9;
+      --error-color: #cb2431;
+      --error-bg: #fff5f5;
+      --border-color: #eaecef;
+      --shadow: 0 4px 12px rgba(0,0,0,0.1);
+      --sidebar-width: 300px;
+      --transition-duration: 0.3s;
+      --radius: 6px;
+      --content-margin: 1rem;
+    }
+    
     * { 
       box-sizing: border-box; 
       margin: 0; 
@@ -16,18 +29,19 @@
       display: flex; 
       height: 100vh; 
       overflow: hidden; 
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f8f9fa;
     }
     
     #sidebar-container { 
-      width: 300px; 
+      width: var(--sidebar-width); 
       background: #f8f9fa; 
       overflow-y: auto; 
-      transition: transform 0.3s ease, width 0.3s ease;
-      border-right: 1px solid #eaecef;
+      transition: transform var(--transition-duration) ease, width var(--transition-duration) ease;
+      border-right: 1px solid var(--border-color);
       z-index: 2;
       flex-shrink: 0;
+      will-change: transform;
     }
     
     #sidebar-container.hidden { 
@@ -46,14 +60,18 @@
       width: 24px; 
       height: 60px; 
       border: none;
-      border-radius: 0 4px 4px 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
       z-index: 1000; 
-      background: #007bff; 
+      background: var(--primary-color); 
       color: white;
       cursor: pointer;
       font-size: 12px;
-      transition: left 0.3s ease;
-      box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+      transition: left var(--transition-duration) ease, background-color 0.2s ease;
+      box-shadow: var(--shadow);
+    }
+    
+    #menu-button:hover {
+      background: var(--primary-hover);
     }
     
     #content { 
@@ -62,17 +80,19 @@
       overflow-y: auto; 
       background: white;
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
-      margin: 1rem;
-      border-radius: 8px;
-      transition: margin-left 0.3s ease;
+      margin: var(--content-margin);
+      border-radius: var(--radius);
+      transition: margin-left var(--transition-duration) ease;
     }
     
     a { 
-      color: #0366d6; 
+      color: var(--primary-color); 
       text-decoration: none;
+      transition: color 0.2s ease;
     }
     
     a:hover { 
+      color: var(--primary-hover);
       text-decoration: underline; 
     }
     
@@ -82,7 +102,7 @@
       height: 20px;
       border: 3px solid rgba(0, 123, 255, 0.3); 
       border-radius: 50%;
-      border-top-color: #007bff; 
+      border-top-color: var(--primary-color); 
       animation: spin 1s linear infinite;
     }
     
@@ -93,15 +113,15 @@
     }
     
     .error { 
-      color: #cb2431; 
+      color: var(--error-color); 
       text-align: center; 
       padding: 2rem; 
     }
     
-    /* 图片懒加载和自适应样式 */
     .image-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       margin: 1.5rem 0;
       position: relative;
     }
@@ -109,8 +129,8 @@
     .markdown-body img {
       opacity: 0;
       transition: opacity 0.5s ease;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       object-fit: contain;
       max-width: 100%;
       height: auto;
@@ -129,20 +149,19 @@
       height: 40px;
       border: 3px solid rgba(0, 123, 255, 0.2);
       border-radius: 50%;
-      border-top-color: #007bff;
+      border-top-color: var(--primary-color);
       animation: spin 1s linear infinite;
     }
     
     .image-error {
       text-align: center;
-      color: #cb2431;
+      color: var(--error-color);
       padding: 1rem;
       border: 1px solid #ffcccc;
       border-radius: 4px;
-      background: #fff5f5;
+      background: var(--error-bg);
     }
     
-    /* 图片说明文字样式 */
     .image-caption {
       text-align: center;
       font-style: italic;
@@ -152,14 +171,21 @@
       max-width: 100%;
     }
     
-    /* 修复侧边栏隐藏后内容区域自适应问题 */
+    .content-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      gap: 1rem;
+    }
+    
     @media (min-width: 769px) {
       #sidebar-container.hidden + #content {
-        margin-left: 1rem;
+        margin-left: var(--content-margin);
       }
     }
     
-    /* 移动设备适配 */
     @media (max-width: 768px) { 
       #sidebar-container { 
         position: fixed; 
@@ -179,6 +205,30 @@
         margin: 0.5rem;
         padding: 1.5rem;
       }
+      
+      #menu-button {
+        top: 1rem;
+        transform: none;
+      }
+    }
+    
+    @media (prefers-contrast: high) {
+      :root {
+        --primary-color: #004d99;
+        --border-color: #000;
+      }
+      
+      #menu-button {
+        border: 1px solid #000;
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
@@ -187,17 +237,27 @@
     <div id="sidebar" class="markdown-body"></div>
   </div>
   <button id="menu-button" aria-label="Toggle sidebar">☰</button>
-  <div id="content" class="markdown-body">Loading...</div>
+  <div id="content" class="markdown-body">
+    <div class="content-loading">
+      <div class="loading"></div>
+      <p>Loading content...</p>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
     // 初始化Markdown解析器
-    const md = window.markdownit();
+    const md = window.markdownit({
+      html: true,
+      linkify: true,
+      typographer: true
+    });
     
     // 状态管理
     const state = {
       sidebarHidden: window.innerWidth <= 768,
-      contentCache: new Map()
+      contentCache: new Map(),
+      isLoading: false
     };
     
     // 从localStorage恢复状态
@@ -216,6 +276,19 @@
     
     // 工具函数
     const utils = {
+      // 防抖函数
+      debounce: (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      },
+      
       // 转换内部链接格式
       convertLinks: text => text
         .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
@@ -234,7 +307,13 @@
         
         return new Promise((resolve, reject) => {
           window.MathJax = { 
-            tex: {inlineMath: [['$', '$']]}
+            tex: {
+              inlineMath: [['$', '$']],
+              displayMath: [['$$', '$$']]
+            },
+            startup: {
+              typeset: false
+            }
           };
           
           const script = document.createElement('script');
@@ -243,6 +322,11 @@
           script.onerror = reject;
           document.head.appendChild(script);
         });
+      },
+      
+      // 安全设置HTML内容
+      setHTML: (element, html) => {
+        element.innerHTML = html;
       }
     };
     
@@ -256,11 +340,7 @@
         
         // 修复内容区域自适应
         if (window.innerWidth > 768) {
-          if (state.sidebarHidden) {
-            elements.content.style.marginLeft = '1rem';
-          } else {
-            elements.content.style.marginLeft = '';
-          }
+          elements.content.style.marginLeft = state.sidebarHidden ? '1rem' : '';
           localStorage.setItem('sidebarHidden', JSON.stringify(state.sidebarHidden));
         }
       },
@@ -270,46 +350,61 @@
         fetch('_sidebar.md')
           .then(res => res.ok ? res.text() : '# Sidebar\n\nSidebar not found.')
           .then(text => {
-            elements.sidebar.innerHTML = md.render(utils.convertLinks(text));
+            utils.setHTML(elements.sidebar, md.render(utils.convertLinks(text)));
           })
           .catch(error => {
-            elements.sidebar.innerHTML = `<div class="error">Failed to load sidebar: ${error.message}</div>`;
+            utils.setHTML(elements.sidebar, `<div class="error">Failed to load sidebar: ${error.message}</div>`);
           });
       }
     };
     
     // 图片懒加载功能
     const imageLoader = {
+      observer: null,
+      
       // 初始化懒加载
       init: () => {
         const lazyImages = elements.content.querySelectorAll('img[data-src]');
         if (lazyImages.length === 0) return;
         
         if ('IntersectionObserver' in window) {
-          const imageObserver = new IntersectionObserver((entries) => {
+          // 清理旧的观察器
+          if (this.observer) {
+            this.observer.disconnect();
+          }
+          
+          this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
               if (entry.isIntersecting) {
-                imageLoader.loadImage(entry.target);
-                imageObserver.unobserve(entry.target);
+                this.loadImage(entry.target);
+                this.observer.unobserve(entry.target);
               }
             });
-          }, { rootMargin: '0px 0px 100px 0px' });
+          }, { 
+            rootMargin: '0px 0px 100px 0px',
+            threshold: 0.1
+          });
     
           lazyImages.forEach(img => {
-            imageLoader.createImageContainer(img);
-            imageObserver.observe(img);
+            this.createImageContainer(img);
+            this.observer.observe(img);
           });
         } else {
           // 不支持 IntersectionObserver 的回退方案
           lazyImages.forEach(img => {
-            imageLoader.createImageContainer(img);
-            imageLoader.loadImage(img);
+            this.createImageContainer(img);
+            this.loadImage(img);
           });
         }
       },
       
       // 创建图片容器
       createImageContainer: (img) => {
+        // 如果已经有容器，不再创建
+        if (img.parentElement.classList.contains('image-container')) {
+          return;
+        }
+        
         const container = document.createElement('div');
         container.className = 'image-container';
         img.parentNode.insertBefore(container, img);
@@ -328,9 +423,9 @@
         const loadImageObj = new Image();
         loadImageObj.src = img.dataset.src;
         
-        loadImageObj.onload = function() {
+        loadImageObj.onload = () => {
           // 根据图片宽高比设置适当的最大尺寸
-          const aspectRatio = this.naturalWidth / this.naturalHeight;
+          const aspectRatio = loadImageObj.naturalWidth / loadImageObj.naturalHeight;
           if (aspectRatio > 2) {
             img.style.maxWidth = '100%';
             img.style.maxHeight = 'none';
@@ -342,7 +437,7 @@
             img.style.maxHeight = '70vh';
           }
           
-          img.src = this.src;
+          img.src = loadImageObj.src;
           img.removeAttribute('data-src');
           
           if (loadingIndicator) {
@@ -361,7 +456,7 @@
           }
         };
         
-        loadImageObj.onerror = function() {
+        loadImageObj.onerror = () => {
           if (loadingIndicator) {
             loadingIndicator.remove();
           }
@@ -373,6 +468,14 @@
           
           img.remove();
         };
+      },
+      
+      // 清理观察器
+      disconnect: () => {
+        if (this.observer) {
+          this.observer.disconnect();
+          this.observer = null;
+        }
       }
     };
     
@@ -380,7 +483,7 @@
     const contentRenderer = {
       // 渲染内容
       render: (text, file) => {
-        elements.content.innerHTML = md.render(utils.convertLinks(text));
+        utils.setHTML(elements.content, md.render(utils.convertLinks(text)));
         document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
         elements.content.scrollTop = 0;
         
@@ -405,19 +508,22 @@
             })
             .catch(console.error);
         }
+        
+        state.isLoading = false;
       },
       
       // 加载Markdown内容
       load: file => {
-        elements.content.innerHTML = `
-          <div style="text-align:center;padding:2rem;">
+        state.isLoading = true;
+        utils.setHTML(elements.content, `
+          <div class="content-loading">
             <div class="loading"></div>
             <p>Loading ${file}...</p>
           </div>
-        `;
+        `);
         
         if (state.contentCache.has(file)) {
-          contentRenderer.render(state.contentCache.get(file), file);
+          this.render(state.contentCache.get(file), file);
           return;
         }
         
@@ -425,15 +531,17 @@
           .then(res => res.ok ? res.text() : `# 404 - Not Found\n\nFile ${file} was not found.`)
           .then(text => {
             state.contentCache.set(file, text);
-            contentRenderer.render(text, file);
+            this.render(text, file);
           })
           .catch(error => {
-            elements.content.innerHTML = `
+            state.isLoading = false;
+            utils.setHTML(elements.content, `
               <div class="error">
                 <h2>Error Loading Content</h2>
                 <p>${error.message}</p>
+                <button onclick="contentRenderer.load('${file}')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
               </div>
-            `;
+            `);
           });
       }
     };
@@ -442,7 +550,7 @@
     const eventHandlers = {
       // 处理链接点击
       handleLinkClick: href => {
-        if (!href.startsWith('?')) return;
+        if (!href.startsWith('?') || state.isLoading) return;
         const file = href.substring(1) + '.md';
         history.pushState(null, '', `?${href.substring(1)}`);
         contentRenderer.load(file);
@@ -455,7 +563,7 @@
       },
       
       // 窗口大小变化处理
-      handleResize: () => {
+      handleResize: utils.debounce(() => {
         const isMobile = window.innerWidth <= 768;
         if (isMobile) {
           state.sidebarHidden = true;
@@ -465,6 +573,22 @@
           if (saved !== null) state.sidebarHidden = JSON.parse(saved);
         }
         sidebar.updateState();
+      }, 250),
+      
+      // 键盘快捷键处理
+      handleKeydown: (e) => {
+        // ESC键关闭侧边栏
+        if (e.key === 'Escape' && !state.sidebarHidden) {
+          state.sidebarHidden = true;
+          sidebar.updateState();
+        }
+        
+        // Ctrl/Cmd + B 切换侧边栏
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+          e.preventDefault();
+          state.sidebarHidden = !state.sidebarHidden;
+          sidebar.updateState();
+        }
       }
     };
     
@@ -485,6 +609,7 @@
       });
       
       window.addEventListener('resize', eventHandlers.handleResize);
+      window.addEventListener('keydown', eventHandlers.handleKeydown);
       window.addEventListener('popstate', () => contentRenderer.load(utils.getFile()));
       
       // 初始化侧边栏和内容
@@ -494,7 +619,11 @@
     };
     
     // 启动应用
-    initApp();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
   </script>
 </body>
 </html>
