@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite - Final Optimized</title>
+  <title>JSMD WebSite - BEM Refactored</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
-  
-  <!-- 安全优化：引入 DOMPurify 库以防止 XSS 攻击 -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
   
   <style>
+    /* --- 1. 全局变量与基础设定 --- */
     :root {
       --primary-color: #0366d6;
       --primary-hover: #0256b9;
@@ -22,13 +21,14 @@
       --radius: 6px;
       --content-margin: 1rem;
     }
-    
+
+    /* 基础重置 */
     * { 
       box-sizing: border-box; 
       margin: 0; 
       padding: 0; 
     }
-    
+
     body { 
       display: flex; 
       height: 100vh; 
@@ -36,29 +36,26 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f8f9fa;
     }
-    
-    #sidebar-container { 
+
+    /* --- 2. 布局组件 (Layout Components) --- */
+    .sidebar {
       width: var(--sidebar-width); 
       background: #f8f9fa; 
       overflow-y: auto; 
       transition: transform var(--transition-duration) ease, width var(--transition-duration) ease;
-      border-right: 1px solid var(--border-color);
+      border-inline-end: 1px solid var(--border-color);
       z-index: 2;
       flex-shrink: 0;
       will-change: transform;
     }
-    
-    #sidebar-container.hidden { 
+    .sidebar[data-visible="false"] {
       width: 0;
       transform: translateX(-100%);
     }
-    
-    #sidebar { 
-      padding: 1.5rem; 
+    .sidebar__content {
+      padding: 1.5rem;
     }
-    
-    /* --- 用户体验优化 (UX)：为侧边栏当前活动链接添加高亮样式 --- */
-    #sidebar a.active {
+    .sidebar__content a.active {
       font-weight: 600;
       color: var(--primary-hover);
       background-color: rgba(3, 102, 214, 0.1);
@@ -67,9 +64,23 @@
       margin: -2px -6px;
     }
 
-    #menu-button { 
+    .main-content {
+      padding: 2rem; 
+      flex: 1; 
+      overflow-y: auto; 
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      margin: var(--content-margin);
+      border-radius: var(--radius);
+      transition: margin-inline-start var(--transition-duration) ease;
+    }
+
+    .sidebar-toggle {
       position: fixed; 
       top: 50%;
+      /* --- MODIFICATION START: CSS驱动的定位 --- */
+      inset-inline-start: var(--sidebar-width); /* 默认位置与侧边栏边缘对齐 */
+      /* --- MODIFICATION END --- */
       transform: translateY(-50%);
       width: 24px; 
       height: 60px; 
@@ -80,70 +91,46 @@
       color: white;
       cursor: pointer;
       font-size: 12px;
-      transition: left var(--transition-duration) ease, background-color 0.2s ease;
+      transition: inset-inline-start var(--transition-duration) ease, background-color 0.2s ease;
       box-shadow: var(--shadow);
     }
-    
-    #menu-button:hover {
-      background: var(--primary-hover);
+    .sidebar-toggle:hover { background: var(--primary-hover); }
+
+    /* --- MODIFICATION START: CSS驱动的定位 --- */
+    /* 当侧边栏不可见时，使用相邻兄弟选择器(+)来移动按钮 */
+    .sidebar[data-visible="false"] + .sidebar-toggle {
+      inset-inline-start: 0;
     }
-    
-    #content { 
-      padding: 2rem; 
-      flex: 1; 
-      overflow-y: auto; 
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-      margin: var(--content-margin);
+    /* --- MODIFICATION END --- */
+
+
+    /* --- 3. 通用组件 (Reusable Components) --- */
+    .button {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
       border-radius: var(--radius);
-      transition: margin-left var(--transition-duration) ease;
-    }
-    
-    a { 
-      color: var(--primary-color); 
+      cursor: pointer;
       text-decoration: none;
-      transition: color 0.2s ease;
+      text-align: center;
+      transition: background-color 0.2s ease;
     }
-    
-    a:hover { 
-      color: var(--primary-hover);
-      text-decoration: underline; 
+    .button:hover { background: var(--primary-hover); }
+    .button--small {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
     }
 
-    .loading, .image-loading {
-      border-radius: 50%;
-      border-top-color: var(--primary-color);
-      animation: spin 1s linear infinite;
-    }
-    
-    .loading { 
-      display: inline-block; 
-      width: 20px; 
-      height: 20px;
-      border: 3px solid rgba(0, 123, 255, 0.3); 
-    }
-    
-    @keyframes spin { 
-      to { 
-        transform: rotate(360deg); 
-      } 
-    }
-    
-    .error { 
-      color: var(--error-color); 
-      text-align: center; 
-      padding: 2rem; 
-    }
-    
-    .image-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 1.5rem 0;
+    .image-card {
+      display: grid;
+      place-items: center;
+      margin-block: 1.5rem;
       position: relative;
     }
-    
-    .markdown-body img {
+    .image-card__image {
       opacity: 0;
       transition: opacity 0.5s ease;
       border-radius: var(--radius);
@@ -151,41 +138,42 @@
       object-fit: contain;
       max-width: 100%;
       height: auto;
+      grid-row: 1 / 1;
+      grid-column: 1 / 1;
     }
-    
-    .markdown-body img.lazy-loaded {
-      opacity: 1;
-    }
-    
-    .image-loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(0, 123, 255, 0.2);
-    }
-    
-    .image-error {
-      text-align: center;
-      color: var(--error-color);
-      padding: 1rem;
-      border: 1px solid #ffcccc;
-      border-radius: 4px;
-      background: var(--error-bg);
-    }
-    
-    .image-caption {
+    .image-card__image--loaded { opacity: 1; }
+    .image-card__caption {
       text-align: center;
       font-style: italic;
       color: #666;
       margin-top: 0.8rem;
       font-size: 0.9rem;
       max-width: 100%;
+      grid-row: 2 / 2;
+      grid-column: 1 / 1;
     }
-    
-    .content-loading {
+
+    /* --- 4. 状态与工具类 (State & Utility Classes) --- */
+    .loading-spinner {
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s linear infinite;
+      grid-row: 1 / 1;
+      grid-column: 1 / 1;
+      z-index: 1;
+    }
+    .loading-spinner--small {
+      width: 20px; 
+      height: 20px;
+      border: 3px solid rgba(0, 123, 255, 0.3); 
+    }
+    .loading-spinner--large {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 123, 255, 0.2);
+    }
+
+    .content-loader {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -193,397 +181,75 @@
       min-height: 200px;
       gap: 1rem;
     }
-    
+
+    .error-message { 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      color: var(--error-color); 
+      text-align: center; 
+      padding: 2rem; 
+      margin-inline: auto;
+      max-width: 400px;
+      background: var(--error-bg);
+      border: 1px solid var(--error-color);
+      border-radius: var(--radius);
+    }
+
+    .markdown-body a { color: var(--primary-color); text-decoration: none; transition: color 0.2s ease; }
+    .markdown-body a:hover { color: var(--primary-hover); text-decoration: underline; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- 5. 响应式与无障碍设计 --- */
     @media (min-width: 769px) {
-      #sidebar-container.hidden + #content {
-        margin-left: var(--content-margin);
+      .sidebar[data-visible="false"] + .main-content {
+        margin-inline-start: var(--content-margin);
       }
     }
-    
     @media (max-width: 768px) { 
-      #sidebar-container { 
-        position: fixed; 
-        left: 0; 
-        top: 0; 
-        height: 100%;
-        width: 80%;
-        background: white;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-      } 
-      
-      #sidebar-container.hidden { 
-        transform: translateX(-100%);
+      .sidebar { position: fixed; inset: 0; height: 100%; width: 80%; background: white; box-shadow: 2px 0 8px rgba(0,0,0,0.1); } 
+      .sidebar[data-visible="false"] { transform: translateX(-100%); }
+      .main-content { margin: 0.5rem; padding: 1.5rem; }
+      .sidebar-toggle { 
+        top: 1rem; 
+        transform: none; 
+        /* --- MODIFICATION START: 响应式下的按钮定位 --- */
+        inset-inline-start: 0;
       }
-      
-      #content {
-        margin: 0.5rem;
-        padding: 1.5rem;
+      .sidebar[data-visible="true"] + .sidebar-toggle {
+          inset-inline-start: 80%; /* 移动端侧边栏宽度 */
       }
-      
-      #menu-button {
-        top: 1rem;
-        transform: none;
-      }
+      /* --- MODIFICATION END --- */
     }
-    
     @media (prefers-contrast: high) {
-      :root {
-        --primary-color: #004d99;
-        --border-color: #000;
-      }
-      
-      #menu-button {
-        border: 1px solid #000;
-      }
+      :root { --primary-color: #004d99; --border-color: #000; }
+      .sidebar-toggle { border: 1px solid #000; }
     }
-    
     @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
+      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
 <body>
-  <div id="sidebar-container">
-    <div id="sidebar" class="markdown-body"></div>
+
+  <!-- HTML结构无需改动 -->
+  <div class="sidebar" data-visible="true">
+    <div class="sidebar__content markdown-body"></div>
   </div>
-  <!-- 无障碍优化 (a11y)：为按钮添加 ARIA 属性，增强屏幕阅读器的可访问性 -->
-  <button id="menu-button" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-container">☰</button>
-  <div id="content" class="markdown-body">
-    <div class="content-loading">
-      <div class="loading"></div>
+
+  <button class="sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true" aria-controls="sidebar">☰</button>
+  
+  <div class="main-content markdown-body">
+    <div class="content-loader">
+      <div class="loading-spinner loading-spinner--small"></div>
       <p>Loading content...</p>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
-  <script>
-    const md = window.markdownit({
-      html: true,
-      linkify: true,
-      typographer: true
-    });
-    
-    // --- 代码结构优化：使用 matchMedia 统一处理响应式断点，避免“魔法数字” ---
-    const isMobileQuery = window.matchMedia('(max-width: 768px)');
-    
-    const state = {
-      sidebarHidden: isMobileQuery.matches, // 使用媒体查询结果初始化
-      contentCache: new Map(),
-      isLoading: false
-    };
-    
-    const savedState = localStorage.getItem('sidebarHidden');
-    if (savedState !== null) {
-      state.sidebarHidden = JSON.parse(savedState);
-    }
-    
-    const elements = {
-      sidebarContainer: document.getElementById('sidebar-container'),
-      sidebar: document.getElementById('sidebar'),
-      menuButton: document.getElementById('menu-button'),
-      content: document.getElementById('content')
-    };
-    
-    const utils = {
-      debounce: (func, wait) => {
-        let timeout;
-        return function executedFunction(...args) {
-          const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-          };
-          clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
-        };
-      },
-      
-      convertLinks: text => text
-        .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
-        .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)'),
-      
-      getFile: () => {
-        const params = new URLSearchParams(window.location.search);
-        const firstParam = params.keys().next().value;
-        return firstParam ? `${firstParam}.md` : 'README.md';
-      },
-      
-      loadMathJax: () => {
-        if (window.MathJax) return Promise.resolve();
-        
-        return new Promise((resolve, reject) => {
-          window.MathJax = { 
-            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
-            startup: { typeset: false }
-          };
-          
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      },
-      
-      // 安全优化：使用 DOMPurify 净化 HTML
-      setHTML: (element, html) => {
-        element.innerHTML = DOMPurify.sanitize(html);
-      }
-    };
-    
-    const sidebar = {
-      updateState: () => {
-        elements.sidebarContainer.classList.toggle('hidden', state.sidebarHidden);
-        elements.menuButton.textContent = state.sidebarHidden ? '☰' : '✕';
-        elements.menuButton.style.left = state.sidebarHidden ? '0' : `${elements.sidebarContainer.offsetWidth}px`;
-        
-        // --- 无障碍优化 (a11y)：动态更新 ARIA 属性，告知辅助技术当前状态 ---
-        elements.menuButton.setAttribute('aria-expanded', !state.sidebarHidden);
-        
-        // --- 无障碍优化 (a11y)：焦点管理，当侧边栏打开时自动聚焦到第一个链接 ---
-        if (!state.sidebarHidden) {
-          setTimeout(() => {
-            const firstFocusableElement = elements.sidebar.querySelector('a, button');
-            if (firstFocusableElement) {
-              firstFocusableElement.focus();
-            }
-          }, 150); // 延迟时间确保 CSS 过渡完成
-        }
+  <script type="module" src="js/main.js"></script>
 
-        if (window.innerWidth > 768) {
-          localStorage.setItem('sidebarHidden', JSON.stringify(state.sidebarHidden));
-        }
-      },
-      
-      init: () => {
-        fetch('_sidebar.md')
-          .then(res => res.ok ? res.text() : Promise.reject(new Error('Sidebar file not found')))
-          .then(text => {
-            utils.setHTML(elements.sidebar, md.render(utils.convertLinks(text)));
-          })
-          .catch(error => {
-            // --- 健壮性优化：为侧边栏加载失败添加重试按钮 ---
-            utils.setHTML(elements.sidebar, `
-              <div class="error" style="padding: 1rem;">
-                <p>Failed to load sidebar.</p>
-                <button id="retry-sidebar-button" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-              </div>
-            `);
-            document.getElementById('retry-sidebar-button').addEventListener('click', sidebar.init);
-          });
-      }
-    };
-    
-    const imageLoader = {
-      observer: null,
-      
-      init() {
-        this.disconnect();
-        const lazyImages = elements.content.querySelectorAll('img[data-src]');
-        if (lazyImages.length === 0) return;
-        
-        if ('IntersectionObserver' in window) {
-          this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                this.loadImage(entry.target);
-                this.observer.unobserve(entry.target);
-              }
-            });
-          }, { rootMargin: '0px 0px 100px 0px', threshold: 0.1 });
-          lazyImages.forEach(img => {
-            this.createImageContainer(img);
-            this.observer.observe(img);
-          });
-        } else {
-          lazyImages.forEach(img => {
-            this.createImageContainer(img);
-            this.loadImage(img);
-          });
-        }
-      },
-      
-      createImageContainer(img) {
-        if (img.parentElement.classList.contains('image-container')) return;
-        const container = document.createElement('div');
-        container.className = 'image-container';
-        img.parentNode.insertBefore(container, img);
-        container.appendChild(img);
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'image-loading';
-        container.appendChild(loadingIndicator);
-      },
-      
-      loadImage(img) {
-        const container = img.parentElement;
-        const loadingIndicator = container.querySelector('.image-loading');
-        const loadImageObj = new Image();
-        loadImageObj.src = img.dataset.src;
-        
-        loadImageObj.onload = function() {
-          const aspectRatio = this.naturalWidth / this.naturalHeight;
-          img.style.maxWidth = aspectRatio > 2 ? '100%' : (aspectRatio < 0.5 ? 'none' : 'min(100%, 800px)');
-          img.style.maxHeight = aspectRatio < 0.5 ? '70vh' : (aspectRatio > 2 ? 'none' : '70vh');
-          img.src = this.src;
-          img.removeAttribute('data-src');
-          if (loadingIndicator) loadingIndicator.remove();
-          img.classList.add('lazy-loaded');
-          const altText = img.alt;
-          if (altText && !container.querySelector('.image-caption')) {
-            const caption = document.createElement('div');
-            caption.className = 'image-caption';
-            caption.textContent = altText;
-            container.appendChild(caption);
-          }
-        };
-        
-        loadImageObj.onerror = function() {
-          if (loadingIndicator) loadingIndicator.remove();
-          const errorDiv = document.createElement('div');
-          errorDiv.className = 'image-error';
-          errorDiv.textContent = 'Failed to load image';
-          container.appendChild(errorDiv);
-          img.remove();
-        };
-      },
-      
-      disconnect() {
-        if (this.observer) {
-          this.observer.disconnect();
-          this.observer = null;
-        }
-      }
-    };
-    
-    const contentRenderer = {
-      render: (text, file) => {
-        utils.setHTML(elements.content, md.render(utils.convertLinks(text)));
-        document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
-        elements.content.scrollTop = 0;
-        
-        const images = elements.content.querySelectorAll('img');
-        images.forEach(img => {
-          if (img.src && !img.getAttribute('data-src')) {
-            img.setAttribute('data-src', img.src);
-            img.removeAttribute('src');
-          }
-        });
-        
-        imageLoader.init();
-        
-        if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
-          utils.loadMathJax().then(() => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-              window.MathJax.typesetPromise();
-            }
-          }).catch(console.error);
-        }
-        
-        // --- 用户体验优化 (UX)：高亮侧边栏中的当前活动链接 ---
-        const currentFile = decodeURIComponent(file.replace('.md', ''));
-        const sidebarLinks = elements.sidebar.querySelectorAll('a');
-        sidebarLinks.forEach(link => {
-          link.classList.remove('active');
-          if (link.getAttribute('href') === `?${currentFile}`) {
-            link.classList.add('active');
-          }
-        });
-
-        state.isLoading = false;
-      },
-      
-      load: file => {
-        state.isLoading = true;
-        utils.setHTML(elements.content, `<div class="content-loading"><div class="loading"></div><p>Loading ${file}...</p></div>`);
-        
-        if (state.contentCache.has(file)) {
-          contentRenderer.render(state.contentCache.get(file), file);
-          return;
-        }
-        
-        fetch(file)
-          .then(res => res.ok ? res.text() : `# 404 - Not Found\n\nFile ${file} was not found.`)
-          .then(text => {
-            state.contentCache.set(file, text);
-            contentRenderer.render(text, file);
-          })
-          .catch(error => {
-            state.isLoading = false;
-            utils.setHTML(elements.content, `<div class="error"><h2>Error Loading Content</h2><p>${error.message}</p><button id="retry-button" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button></div>`);
-            document.getElementById('retry-button').addEventListener('click', () => contentRenderer.load(file));
-          });
-      }
-    };
-    
-    const eventHandlers = {
-      handleLinkClick: href => {
-        if (!href.startsWith('?') || state.isLoading) return;
-        const file = href.substring(1) + '.md';
-        history.pushState(null, '', `?${href.substring(1)}`);
-        contentRenderer.load(file);
-        
-        // 使用媒体查询对象判断，而不是硬编码的宽度
-        if (isMobileQuery.matches && !state.sidebarHidden) {
-          state.sidebarHidden = true;
-          sidebar.updateState();
-        }
-      },
-      
-      handleResize: utils.debounce(() => {
-        if (isMobileQuery.matches) {
-          state.sidebarHidden = true;
-        } else {
-          const saved = localStorage.getItem('sidebarHidden');
-          if (saved !== null) state.sidebarHidden = JSON.parse(saved);
-        }
-        sidebar.updateState();
-      }, 250),
-      
-      handleKeydown: (e) => {
-        if (e.key === 'Escape' && !state.sidebarHidden) {
-          state.sidebarHidden = true;
-          sidebar.updateState();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-          e.preventDefault();
-          state.sidebarHidden = !state.sidebarHidden;
-          sidebar.updateState();
-        }
-      }
-    };
-    
-    const initApp = () => {
-      elements.menuButton.addEventListener('click', () => {
-        state.sidebarHidden = !state.sidebarHidden;
-        sidebar.updateState();
-      });
-      
-      document.addEventListener('click', e => {
-        const link = e.target.closest('a');
-        if (link && link.getAttribute('href')?.startsWith('?')) {
-          e.preventDefault();
-          eventHandlers.handleLinkClick(link.getAttribute('href'));
-        }
-      });
-      
-      // --- 性能优化：为不阻止默认行为的事件添加 passive: true ---
-      window.addEventListener('resize', eventHandlers.handleResize, { passive: true });
-      window.addEventListener('keydown', eventHandlers.handleKeydown);
-      window.addEventListener('popstate', () => contentRenderer.load(utils.getFile()));
-      
-      sidebar.updateState();
-      sidebar.init();
-      contentRenderer.load(utils.getFile());
-    };
-    
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
-  </script>
 </body>
 </html>
