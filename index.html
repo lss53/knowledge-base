@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSMD WebSite - Secure & Optimized</title>
+  <title>JSMD WebSite - Final Optimized</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
   
-  <!-- STEP 1: 引入 DOMPurify 库以增强安全性 -->
+  <!-- 安全优化：引入 DOMPurify 库以防止 XSS 攻击 -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
   
   <style>
@@ -57,6 +57,16 @@
       padding: 1.5rem; 
     }
     
+    /* --- 用户体验优化 (UX)：为侧边栏当前活动链接添加高亮样式 --- */
+    #sidebar a.active {
+      font-weight: 600;
+      color: var(--primary-hover);
+      background-color: rgba(3, 102, 214, 0.1);
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin: -2px -6px;
+    }
+
     #menu-button { 
       position: fixed; 
       top: 50%;
@@ -240,7 +250,8 @@
   <div id="sidebar-container">
     <div id="sidebar" class="markdown-body"></div>
   </div>
-  <button id="menu-button" aria-label="Toggle sidebar">☰</button>
+  <!-- 无障碍优化 (a11y)：为按钮添加 ARIA 属性，增强屏幕阅读器的可访问性 -->
+  <button id="menu-button" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-container">☰</button>
   <div id="content" class="markdown-body">
     <div class="content-loading">
       <div class="loading"></div>
@@ -250,27 +261,26 @@
 
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script>
-    // 初始化Markdown解析器
     const md = window.markdownit({
       html: true,
       linkify: true,
       typographer: true
     });
     
-    // 状态管理
+    // --- 代码结构优化：使用 matchMedia 统一处理响应式断点，避免“魔法数字” ---
+    const isMobileQuery = window.matchMedia('(max-width: 768px)');
+    
     const state = {
-      sidebarHidden: window.innerWidth <= 768,
+      sidebarHidden: isMobileQuery.matches, // 使用媒体查询结果初始化
       contentCache: new Map(),
       isLoading: false
     };
     
-    // 从localStorage恢复状态
     const savedState = localStorage.getItem('sidebarHidden');
     if (savedState !== null) {
       state.sidebarHidden = JSON.parse(savedState);
     }
     
-    // DOM元素引用
     const elements = {
       sidebarContainer: document.getElementById('sidebar-container'),
       sidebar: document.getElementById('sidebar'),
@@ -278,9 +288,7 @@
       content: document.getElementById('content')
     };
     
-    // 工具函数
     const utils = {
-      // 防抖函数
       debounce: (func, wait) => {
         let timeout;
         return function executedFunction(...args) {
@@ -293,31 +301,23 @@
         };
       },
       
-      // 转换内部链接格式
       convertLinks: text => text
         .replace(/\[\[([^\]]+)\]\]/g, '[$1](?$1)')
         .replace(/\[([^\]]+)\]\(([^)]+)\.md\)/g, '[$1](?$2)'),
       
-      // 获取当前文件参数
       getFile: () => {
         const params = new URLSearchParams(window.location.search);
         const firstParam = params.keys().next().value;
         return firstParam ? `${firstParam}.md` : 'README.md';
       },
       
-      // 加载MathJax
       loadMathJax: () => {
         if (window.MathJax) return Promise.resolve();
         
         return new Promise((resolve, reject) => {
           window.MathJax = { 
-            tex: {
-              inlineMath: [['$', '$']],
-              displayMath: [['$$', '$$']]
-            },
-            startup: {
-              typeset: false
-            }
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            startup: { typeset: false }
           };
           
           const script = document.createElement('script');
@@ -328,46 +328,60 @@
         });
       },
       
-      // STEP 2: 修改 setHTML 函数以使用 DOMPurify
-      // 安全设置HTML内容
+      // 安全优化：使用 DOMPurify 净化 HTML
       setHTML: (element, html) => {
         element.innerHTML = DOMPurify.sanitize(html);
       }
     };
     
-    // 侧边栏功能
     const sidebar = {
-      // 更新侧边栏状态
       updateState: () => {
         elements.sidebarContainer.classList.toggle('hidden', state.sidebarHidden);
         elements.menuButton.textContent = state.sidebarHidden ? '☰' : '✕';
         elements.menuButton.style.left = state.sidebarHidden ? '0' : `${elements.sidebarContainer.offsetWidth}px`;
         
+        // --- 无障碍优化 (a11y)：动态更新 ARIA 属性，告知辅助技术当前状态 ---
+        elements.menuButton.setAttribute('aria-expanded', !state.sidebarHidden);
+        
+        // --- 无障碍优化 (a11y)：焦点管理，当侧边栏打开时自动聚焦到第一个链接 ---
+        if (!state.sidebarHidden) {
+          setTimeout(() => {
+            const firstFocusableElement = elements.sidebar.querySelector('a, button');
+            if (firstFocusableElement) {
+              firstFocusableElement.focus();
+            }
+          }, 150); // 延迟时间确保 CSS 过渡完成
+        }
+
         if (window.innerWidth > 768) {
           localStorage.setItem('sidebarHidden', JSON.stringify(state.sidebarHidden));
         }
       },
       
-      // 初始化
       init: () => {
         fetch('_sidebar.md')
-          .then(res => res.ok ? res.text() : '# Sidebar\n\nSidebar not found.')
+          .then(res => res.ok ? res.text() : Promise.reject(new Error('Sidebar file not found')))
           .then(text => {
             utils.setHTML(elements.sidebar, md.render(utils.convertLinks(text)));
           })
           .catch(error => {
-            utils.setHTML(elements.sidebar, `<div class="error">Failed to load sidebar: ${error.message}</div>`);
+            // --- 健壮性优化：为侧边栏加载失败添加重试按钮 ---
+            utils.setHTML(elements.sidebar, `
+              <div class="error" style="padding: 1rem;">
+                <p>Failed to load sidebar.</p>
+                <button id="retry-sidebar-button" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+              </div>
+            `);
+            document.getElementById('retry-sidebar-button').addEventListener('click', sidebar.init);
           });
       }
     };
     
-    // 图片懒加载功能
     const imageLoader = {
       observer: null,
       
       init() {
         this.disconnect();
-        
         const lazyImages = elements.content.querySelectorAll('img[data-src]');
         if (lazyImages.length === 0) return;
         
@@ -379,11 +393,7 @@
                 this.observer.unobserve(entry.target);
               }
             });
-          }, { 
-            rootMargin: '0px 0px 100px 0px',
-            threshold: 0.1
-          });
-    
+          }, { rootMargin: '0px 0px 100px 0px', threshold: 0.1 });
           lazyImages.forEach(img => {
             this.createImageContainer(img);
             this.observer.observe(img);
@@ -397,15 +407,11 @@
       },
       
       createImageContainer(img) {
-        if (img.parentElement.classList.contains('image-container')) {
-          return;
-        }
-        
+        if (img.parentElement.classList.contains('image-container')) return;
         const container = document.createElement('div');
         container.className = 'image-container';
         img.parentNode.insertBefore(container, img);
         container.appendChild(img);
-        
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'image-loading';
         container.appendChild(loadingIndicator);
@@ -414,32 +420,17 @@
       loadImage(img) {
         const container = img.parentElement;
         const loadingIndicator = container.querySelector('.image-loading');
-        
         const loadImageObj = new Image();
         loadImageObj.src = img.dataset.src;
         
         loadImageObj.onload = function() {
           const aspectRatio = this.naturalWidth / this.naturalHeight;
-          if (aspectRatio > 2) {
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = 'none';
-          } else if (aspectRatio < 0.5) {
-            img.style.maxWidth = 'none';
-            img.style.maxHeight = '70vh';
-          } else {
-            img.style.maxWidth = 'min(100%, 800px)';
-            img.style.maxHeight = '70vh';
-          }
-          
+          img.style.maxWidth = aspectRatio > 2 ? '100%' : (aspectRatio < 0.5 ? 'none' : 'min(100%, 800px)');
+          img.style.maxHeight = aspectRatio < 0.5 ? '70vh' : (aspectRatio > 2 ? 'none' : '70vh');
           img.src = this.src;
           img.removeAttribute('data-src');
-          
-          if (loadingIndicator) {
-            loadingIndicator.remove();
-          }
-          
+          if (loadingIndicator) loadingIndicator.remove();
           img.classList.add('lazy-loaded');
-          
           const altText = img.alt;
           if (altText && !container.querySelector('.image-caption')) {
             const caption = document.createElement('div');
@@ -450,15 +441,11 @@
         };
         
         loadImageObj.onerror = function() {
-          if (loadingIndicator) {
-            loadingIndicator.remove();
-          }
-          
+          if (loadingIndicator) loadingIndicator.remove();
           const errorDiv = document.createElement('div');
           errorDiv.className = 'image-error';
           errorDiv.textContent = 'Failed to load image';
           container.appendChild(errorDiv);
-          
           img.remove();
         };
       },
@@ -471,9 +458,7 @@
       }
     };
     
-    // 内容渲染功能
     const contentRenderer = {
-      // 渲染内容
       render: (text, file) => {
         utils.setHTML(elements.content, md.render(utils.convertLinks(text)));
         document.title = `${decodeURIComponent(file.replace('.md', ''))} - JSMD`;
@@ -490,27 +475,29 @@
         imageLoader.init();
         
         if (/\$\$[\s\S]*?\$\$|\$[^\n]*?\$/.test(text)) {
-          utils.loadMathJax()
-            .then(() => {
-              if (window.MathJax && window.MathJax.typesetPromise) {
-                window.MathJax.typesetPromise();
-              }
-            })
-            .catch(console.error);
+          utils.loadMathJax().then(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+              window.MathJax.typesetPromise();
+            }
+          }).catch(console.error);
         }
         
+        // --- 用户体验优化 (UX)：高亮侧边栏中的当前活动链接 ---
+        const currentFile = decodeURIComponent(file.replace('.md', ''));
+        const sidebarLinks = elements.sidebar.querySelectorAll('a');
+        sidebarLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === `?${currentFile}`) {
+            link.classList.add('active');
+          }
+        });
+
         state.isLoading = false;
       },
       
-      // 加载Markdown内容
       load: file => {
         state.isLoading = true;
-        utils.setHTML(elements.content, `
-          <div class="content-loading">
-            <div class="loading"></div>
-            <p>Loading ${file}...</p>
-          </div>
-        `);
+        utils.setHTML(elements.content, `<div class="content-loading"><div class="loading"></div><p>Loading ${file}...</p></div>`);
         
         if (state.contentCache.has(file)) {
           contentRenderer.render(state.contentCache.get(file), file);
@@ -525,40 +512,28 @@
           })
           .catch(error => {
             state.isLoading = false;
-            utils.setHTML(elements.content, `
-              <div class="error">
-                <h2>Error Loading Content</h2>
-                <p>${error.message}</p>
-                <button id="retry-button" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-              </div>
-            `);
-            
-            document.getElementById('retry-button').addEventListener('click', () => {
-              contentRenderer.load(file);
-            });
+            utils.setHTML(elements.content, `<div class="error"><h2>Error Loading Content</h2><p>${error.message}</p><button id="retry-button" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button></div>`);
+            document.getElementById('retry-button').addEventListener('click', () => contentRenderer.load(file));
           });
       }
     };
     
-    // 事件处理
     const eventHandlers = {
-      // 处理链接点击
       handleLinkClick: href => {
         if (!href.startsWith('?') || state.isLoading) return;
         const file = href.substring(1) + '.md';
         history.pushState(null, '', `?${href.substring(1)}`);
         contentRenderer.load(file);
         
-        if (window.innerWidth <= 768 && !state.sidebarHidden) {
+        // 使用媒体查询对象判断，而不是硬编码的宽度
+        if (isMobileQuery.matches && !state.sidebarHidden) {
           state.sidebarHidden = true;
           sidebar.updateState();
         }
       },
       
-      // 窗口大小变化处理
       handleResize: utils.debounce(() => {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
+        if (isMobileQuery.matches) {
           state.sidebarHidden = true;
         } else {
           const saved = localStorage.getItem('sidebarHidden');
@@ -567,13 +542,11 @@
         sidebar.updateState();
       }, 250),
       
-      // 键盘快捷键处理
       handleKeydown: (e) => {
         if (e.key === 'Escape' && !state.sidebarHidden) {
           state.sidebarHidden = true;
           sidebar.updateState();
         }
-        
         if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
           e.preventDefault();
           state.sidebarHidden = !state.sidebarHidden;
@@ -582,7 +555,6 @@
       }
     };
     
-    // 初始化应用
     const initApp = () => {
       elements.menuButton.addEventListener('click', () => {
         state.sidebarHidden = !state.sidebarHidden;
@@ -597,7 +569,8 @@
         }
       });
       
-      window.addEventListener('resize', eventHandlers.handleResize);
+      // --- 性能优化：为不阻止默认行为的事件添加 passive: true ---
+      window.addEventListener('resize', eventHandlers.handleResize, { passive: true });
       window.addEventListener('keydown', eventHandlers.handleKeydown);
       window.addEventListener('popstate', () => contentRenderer.load(utils.getFile()));
       
@@ -606,7 +579,6 @@
       contentRenderer.load(utils.getFile());
     };
     
-    // 启动应用
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initApp);
     } else {
